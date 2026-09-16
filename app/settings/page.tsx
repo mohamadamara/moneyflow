@@ -3,7 +3,9 @@
 import { useEffect, useState } from "react";
 import { Sun, Moon, Download, Upload, RotateCcw, UserPlus, Trash2 } from "lucide-react";
 import { useStore } from "@/lib/store";
+import { useAuth } from "@/lib/auth-context";
 import { PageTitle, Card, CardHeader, Button, Badge } from "@/components/ui";
+import { LogOut } from "lucide-react";
 import { Field, Input, Select, Modal } from "@/components/form";
 import { transactionsToCSV, downloadText, parseCSV } from "@/lib/csv";
 import type { CurrencyCode, MemberRole, Transaction } from "@/lib/types";
@@ -11,7 +13,8 @@ import type { CurrencyCode, MemberRole, Transaction } from "@/lib/types";
 const ROLE_LABEL: Record<MemberRole, string> = { owner: "المالك", partner: "شريك", viewer: "مشاهد" };
 
 export default function SettingsPage() {
-  const { db, ready, updateHousehold, resetDemo, addTransaction } = useStore();
+  const { db, ready, updateHousehold, resetDemo, addTransaction, mode } = useStore();
+  const auth = useAuth();
   const [name, setName] = useState("");
   const [theme, setTheme] = useState<"light" | "dark" | "system">("system");
   const [importOpen, setImportOpen] = useState(false);
@@ -34,13 +37,29 @@ export default function SettingsPage() {
 
   if (!ready) return null;
 
-  const supaConnected = !!process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supaConnected = mode === "supabase";
 
   return (
     <div className="max-w-3xl">
       <PageTitle title="الإعدادات" />
 
       <div className="space-y-5">
+        {/* Account (real mode) */}
+        {mode === "supabase" && (
+          <Card>
+            <CardHeader title="الحساب" />
+            <div className="flex items-center justify-between p-5 pt-4">
+              <div>
+                <p className="text-sm font-semibold text-ink">{auth.email}</p>
+                <p className="text-xs text-muted">مسجّل الدخول</p>
+              </div>
+              <Button variant="outline" onClick={() => auth.signOut?.()}>
+                <LogOut size={16} /> تسجيل الخروج
+              </Button>
+            </div>
+          </Card>
+        )}
+
         {/* Household */}
         <Card>
           <CardHeader title="الأسرة" />
@@ -116,14 +135,14 @@ export default function SettingsPage() {
             <Button variant="outline" onClick={() => downloadText(`ميزان-تصدير.csv`, transactionsToCSV(db))}><Download size={16} /> تصدير المعاملات</Button>
             <Button variant="outline" onClick={() => setImportOpen(true)}><Upload size={16} /> استيراد CSV</Button>
             <div className="flex-1" />
-            {confirmReset ? (
+            {mode === "local" && (confirmReset ? (
               <div className="flex gap-2">
                 <Button variant="danger" onClick={() => { resetDemo(); setConfirmReset(false); }}>تأكيد إعادة التعيين</Button>
                 <Button variant="ghost" onClick={() => setConfirmReset(false)}>تراجع</Button>
               </div>
             ) : (
               <Button variant="ghost" className="!text-neg" onClick={() => setConfirmReset(true)}><RotateCcw size={16} /> إعادة تعيين البيانات التجريبية</Button>
-            )}
+            ))}
           </div>
         </Card>
 
@@ -134,14 +153,22 @@ export default function SettingsPage() {
             <div className="mb-3 flex items-center gap-2">
               <Badge tone={supaConnected ? "pos" : "warn"}>{supaConnected ? "متّصل" : "الوضع المحلي (تجريبي)"}</Badge>
             </div>
-            <p className="text-muted">
-              يعمل التطبيق حاليًا في الوضع المحلي وتُحفظ البيانات في متصفّحك. لتفعيل حساب المستخدمين المتعدّدين والمزامنة والدعوات:
-            </p>
-            <ol className="mt-2 list-decimal space-y-1 pr-5 text-muted">
-              <li>أنشئ مشروعًا على supabase.com</li>
-              <li>نفّذ ملفّي <code className="rounded bg-surface-2 px-1">supabase/schema.sql</code> ثم <code className="rounded bg-surface-2 px-1">supabase/policies.sql</code></li>
-              <li>ضع المفاتيح في <code className="rounded bg-surface-2 px-1">.env.local</code> ثم أعد التشغيل</li>
-            </ol>
+            {supaConnected ? (
+              <p className="text-muted">
+                التطبيق متّصل بقاعدة بيانات Supabase. تُحفظ بياناتكم بأمان وتتزامن عبر الأجهزة، ويمكن لأعضاء الأسرة مشاركتها وفق الصلاحيات.
+              </p>
+            ) : (
+              <>
+                <p className="text-muted">
+                  يعمل التطبيق حاليًا في الوضع المحلي وتُحفظ البيانات في متصفّحك. لتفعيل حساب المستخدمين المتعدّدين والمزامنة والدعوات:
+                </p>
+                <ol className="mt-2 list-decimal space-y-1 pr-5 text-muted">
+                  <li>أنشئ مشروعًا على supabase.com</li>
+                  <li>نفّذ ملفّي <code className="rounded bg-surface-2 px-1">supabase/schema.sql</code> ثم <code className="rounded bg-surface-2 px-1">supabase/policies.sql</code></li>
+                  <li>ضع المفاتيح في <code className="rounded bg-surface-2 px-1">.env.local</code> ثم أعد التشغيل</li>
+                </ol>
+              </>
+            )}
           </div>
         </Card>
       </div>

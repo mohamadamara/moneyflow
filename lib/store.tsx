@@ -1,27 +1,22 @@
 "use client";
 
 import React, {
-  createContext,
   useCallback,
-  useContext,
   useEffect,
   useMemo,
   useState,
 } from "react";
 import type {
-  Account,
   ActivityEvent,
   AppNotification,
-  Bill,
-  Budget,
-  Category,
   Database,
-  SavingsGoal,
-  Subscription,
   Transaction,
 } from "./types";
 import { buildSeed } from "./data/seed";
 import { monthKey } from "./calc";
+import { StoreContext, type StoreValue } from "./store-context";
+
+export { useStore } from "./store-context";
 
 const STORAGE_KEY = "hmos:v1";
 
@@ -39,56 +34,6 @@ function loadDB(): Database {
 function uid(prefix: string): string {
   return `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`;
 }
-
-interface StoreValue {
-  db: Database;
-  ready: boolean;
-  // month navigation (UI-wide)
-  month: string;
-  setMonth: (m: string) => void;
-
-  // transactions
-  addTransaction: (t: Omit<Transaction, "id" | "createdAt">) => void;
-  updateTransaction: (id: string, patch: Partial<Transaction>) => void;
-  deleteTransaction: (id: string) => void;
-
-  // accounts
-  addAccount: (a: Omit<Account, "id">) => void;
-  updateAccount: (id: string, patch: Partial<Account>) => void;
-
-  // budgets
-  addBudget: (b: Omit<Budget, "id">) => void;
-  updateBudget: (id: string, patch: Partial<Budget>) => void;
-  deleteBudget: (id: string) => void;
-
-  // bills
-  addBill: (b: Omit<Bill, "id" | "paidMonths">) => void;
-  updateBill: (id: string, patch: Partial<Bill>) => void;
-  payBill: (id: string, createTx?: boolean) => void;
-  unpayBill: (id: string) => void;
-
-  // subscriptions
-  addSubscription: (s: Omit<Subscription, "id">) => void;
-  updateSubscription: (id: string, patch: Partial<Subscription>) => void;
-
-  // goals
-  addGoal: (g: Omit<SavingsGoal, "id" | "contributions">) => void;
-  addContribution: (goalId: string, amount: number, memberId?: string) => void;
-
-  // categories
-  addCategory: (c: Omit<Category, "id">) => void;
-
-  // notifications
-  markNotificationRead: (id: string) => void;
-  markAllRead: () => void;
-
-  // household / settings
-  updateHousehold: (patch: Partial<Database["household"]>) => void;
-
-  resetDemo: () => void;
-}
-
-const StoreContext = createContext<StoreValue | null>(null);
 
 export function StoreProvider({ children }: { children: React.ReactNode }) {
   const [db, setDb] = useState<Database>(() => buildSeed());
@@ -148,6 +93,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     return {
       db,
       ready,
+      mode: "local",
       month,
       setMonth,
 
@@ -299,10 +245,4 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   }, [db, ready, month, mutate, logActivity, notify]);
 
   return <StoreContext.Provider value={value}>{children}</StoreContext.Provider>;
-}
-
-export function useStore(): StoreValue {
-  const ctx = useContext(StoreContext);
-  if (!ctx) throw new Error("useStore must be used within StoreProvider");
-  return ctx;
 }
