@@ -421,15 +421,18 @@ export async function createHousehold(
   const { data: auth } = await sb.auth.getUser();
   if (!auth.user) throw new Error("not authenticated");
 
-  const { data: hh, error: e1 } = await sb
-    .from("households")
-    .insert({ name: opts.name, currency: opts.currency, created_by: auth.user.id })
-    .select("id")
-    .single();
-  if (e1) throw e1;
-  const householdId = hh.id as string;
+  // Generate the id on the client so we never need a RETURNING select on
+  // `households` (which RLS would block until the membership row exists).
+  const householdId =
+    globalThis.crypto?.randomUUID?.() ??
+    "00000000-0000-4000-8000-" + Date.now().toString(16).padStart(12, "0");
 
-  // owner membership
+  const { error: e1 } = await sb
+    .from("households")
+    .insert({ id: householdId, name: opts.name, currency: opts.currency, created_by: auth.user.id });
+  if (e1) throw e1;
+
+  // owner membership (must exist before category/account inserts pass RLS)
   const { error: e2 } = await sb.from("household_members").insert({
     household_id: householdId,
     user_id: auth.user.id,
@@ -440,7 +443,7 @@ export async function createHousehold(
   if (e2) throw e2;
 
   // default categories
-  await sb.from("categories").insert(
+  const { error: e3 } = await sb.from("categories").insert(
     DEFAULT_CATEGORIES.map((c) => ({
       household_id: householdId,
       name: c.name,
@@ -451,10 +454,11 @@ export async function createHousehold(
       is_custom: false,
     }))
   );
+  if (e3) throw e3;
 
   // starting accounts
   if (opts.accounts.length) {
-    await sb.from("accounts").insert(
+    const { error: e4 } = await sb.from("accounts").insert(
       opts.accounts.map((a) => ({
         household_id: householdId,
         name: a.name,
@@ -462,9 +466,11 @@ export async function createHousehold(
         opening_balance: toMinor(a.opening),
       }))
     );
+    if (e4) throw e4;
   }
 
-  await sb.from("household_settings").insert({ household_id: householdId }).select().maybeSingle();
+  // non-critical: household settings row (ignore failure)
+  await sb.from("household_settings").insert({ household_id: householdId });
 
   return householdId;
 }

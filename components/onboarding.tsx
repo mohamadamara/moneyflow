@@ -46,8 +46,9 @@ export function Onboarding({
       const id = await createHousehold(sb, { name: householdName.trim() || "عائلتي", currency, ownerName: ownerName.trim() || "أنا", accounts });
       onDone(id);
     } catch (e) {
-      setError("تعذّر إنشاء الأسرة. تأكّد من تنفيذ ملفّي SQL في Supabase ثم أعد المحاولة.");
-      console.error(e);
+      const msg = (e as { message?: string })?.message ?? String(e);
+      setError(`تعذّر إنشاء الأسرة: ${msg}`);
+      console.error("[onboarding] createHousehold failed:", e);
       setBusy(false);
     }
   }
