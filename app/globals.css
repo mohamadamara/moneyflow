@@ -1,0 +1,128 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --font-sans: "Cairo", "Tajawal", "Segoe UI", Tahoma, "Helvetica Neue", Arial,
+    system-ui, sans-serif;
+
+  --bg: #f6f7f9;
+  --surface: #ffffff;
+  --surface-2: #f1f3f6;
+  --border: #e6e8ec;
+  --ink: #101828;
+  --muted: #667085;
+  --faint: #98a2b3;
+
+  --brand: #4f46e5;
+  --brand-soft: #eef2ff;
+
+  --pos: #067647;
+  --pos-soft: #ecfdf3;
+  --neg: #b42318;
+  --neg-soft: #fef3f2;
+  --warn: #b54708;
+  --warn-soft: #fffaeb;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0b0e14;
+    --surface: #121722;
+    --surface-2: #1a2130;
+    --border: #232b3a;
+    --ink: #eef2f8;
+    --muted: #94a0b4;
+    --faint: #6b7688;
+
+    --brand: #818cf8;
+    --brand-soft: #1e2338;
+    --pos: #4ade80;
+    --pos-soft: #10261a;
+    --neg: #f87171;
+    --neg-soft: #2a1514;
+    --warn: #fbbf24;
+    --warn-soft: #2a2010;
+  }
+}
+
+:root[data-theme="dark"] {
+  --bg: #0b0e14;
+  --surface: #121722;
+  --surface-2: #1a2130;
+  --border: #232b3a;
+  --ink: #eef2f8;
+  --muted: #94a0b4;
+  --faint: #6b7688;
+  --brand: #818cf8;
+  --brand-soft: #1e2338;
+  --pos: #4ade80;
+  --pos-soft: #10261a;
+  --neg: #f87171;
+  --neg-soft: #2a1514;
+  --warn: #fbbf24;
+  --warn-soft: #2a2010;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  padding: 0;
+  margin: 0;
+}
+
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* tabular numbers for money */
+.tnum {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+}
+
+::selection {
+  background: var(--brand-soft);
+}
+
+/* thin scrollbars */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+*::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 999px;
+}
+
+/* skeleton shimmer */
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+.skeleton {
+  background: linear-gradient(90deg, var(--surface-2) 25%, var(--border) 37%, var(--surface-2) 63%);
+  background-size: 400% 100%;
+  animation: shimmer 1.4s ease infinite;
+  border-radius: 8px;
+}
+
+/* fade/scale for modals */
+@keyframes pop-in {
+  from { opacity: 0; transform: translateY(6px) scale(0.99); }
+  to { opacity: 1; transform: none; }
+}
+.animate-pop { animation: pop-in 0.16s ease-out; }
+@keyframes fade-in { from { opacity: 0 } to { opacity: 1 } }
+.animate-fade { animation: fade-in 0.15s ease-out; }
