@@ -6,7 +6,8 @@ import { useUI } from "@/components/quick-add";
 import { activeTx, inMonth, monthlyIncome } from "@/lib/calc";
 import { money } from "@/lib/format";
 import { PageTitle, Card, CardHeader, Button, EmptyState, Skeleton } from "@/components/ui";
-import { StatTile, TxRow } from "@/components/widgets";
+import { StatTile } from "@/components/widgets";
+import { TxList } from "@/components/tx-list";
 import { TxDetail } from "@/components/tx-detail";
 import type { Transaction } from "@/lib/types";
 
@@ -50,7 +51,7 @@ export default function IncomePage() {
           {income.length === 0 ? (
             <EmptyState title="لا دخل مسجّل هذا الشهر" desc="سجّل راتبك أو أي دخل آخر لترى صورة أموالكم كاملة." action={<Button onClick={() => openAdd("income")}>+ إضافة دخل</Button>} />
           ) : (
-            income.map((t) => <TxRow key={t.id} tx={t} category={cat(t.categoryId)} member={mem(t.memberId)} currency={cur} onClick={() => setSel(t)} />)
+            <TxList items={income} onSelect={setSel} />
           )}
         </div>
       </Card>

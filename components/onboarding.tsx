@@ -57,7 +57,7 @@ export function Onboarding({
     <div className="flex min-h-screen items-center justify-center bg-bg px-4 py-8">
       <div className="w-full max-w-md">
         <div className="mb-6 flex flex-col items-center text-center">
-          <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-brand text-white">
+          <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-brand text-on-brand">
             <Wallet size={22} />
           </div>
           <h1 className="text-xl font-extrabold text-ink">لنُجهّز مساحتكم المالية</h1>
@@ -111,7 +111,7 @@ export function Onboarding({
                         onClick={() => setSelected((p) => ({ ...p, [s.key]: !p[s.key] }))}
                         className="flex w-full items-center gap-3 text-right"
                       >
-                        <span className={`flex h-9 w-9 items-center justify-center rounded-lg ${on ? "bg-brand text-white" : "bg-surface-2 text-muted"}`}>
+                        <span className={`flex h-9 w-9 items-center justify-center rounded-lg ${on ? "bg-brand text-on-brand" : "bg-surface-2 text-muted"}`}>
                           <Icon name={s.icon} size={17} />
                         </span>
                         <span className="flex-1 text-sm font-semibold text-ink">{s.name}</span>

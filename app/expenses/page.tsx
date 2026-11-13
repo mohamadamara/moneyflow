@@ -6,7 +6,7 @@ import { useUI } from "@/components/quick-add";
 import { activeTx, inMonth, monthlyExpense, spendingByGroup } from "@/lib/calc";
 import { money, percent } from "@/lib/format";
 import { PageTitle, Card, CardHeader, Button, EmptyState, Skeleton } from "@/components/ui";
-import { TxRow } from "@/components/widgets";
+import { TxList } from "@/components/tx-list";
 import { TxDetail } from "@/components/tx-detail";
 import { DEFAULT_CATEGORIES } from "@/lib/data/categories";
 import type { Transaction } from "@/lib/types";
@@ -67,9 +67,7 @@ export default function ExpensesPage() {
           <Card>
             <CardHeader title={group ? `معاملات: ${group}` : "كل المعاملات"} sub={`${list.length} عملية`} />
             <div className="p-3">
-              {list.map((t) => (
-                <TxRow key={t.id} tx={t} category={cat(t.categoryId)} member={mem(t.memberId)} currency={cur} onClick={() => setSel(t)} />
-              ))}
+              <TxList items={list} onSelect={setSel} />
             </div>
           </Card>
         </div>

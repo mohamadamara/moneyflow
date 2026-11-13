@@ -63,7 +63,7 @@ export default function SubscriptionsPage() {
                   <Badge tone={st.tone}>{st.label}</Badge>
                 </div>
                 <Select
-                  className="!h-8 !w-auto !py-1 text-xs"
+                  className="!h-10 !w-auto !px-2.5 !py-1 sm:!h-8 sm:!text-xs"
                   value={s.status}
                   onChange={(e) => updateSubscription(s.id, { status: e.target.value as SubStatus })}
                 >

@@ -2,66 +2,89 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ============================================================
+   Mizan design system (V6)
+   Every colour in the app comes from these tokens, so light and
+   dark mode stay in step. Change a value here, not in a page.
+   ============================================================ */
 :root {
-  --font-sans: "Cairo", "Tajawal", "Segoe UI", Tahoma, "Helvetica Neue", Arial,
+  --font-sans: "IBM Plex Sans Arabic", "Segoe UI", Tahoma, "Helvetica Neue", Arial,
     system-ui, sans-serif;
 
-  --bg: #f6f7f9;
+  --bg: #f6f6f8;
   --surface: #ffffff;
-  --surface-2: #f1f3f6;
-  --border: #e6e8ec;
-  --ink: #101828;
-  --muted: #667085;
-  --faint: #98a2b3;
+  --surface-2: #f1f2f5;
+  --border: #e6e7ec;
+  --border-strong: #d3d6de;
+  --ink: #0f1115;
+  --muted: #5b6270;
+  --faint: #8d94a3;
 
-  --brand: #4f46e5;
-  --brand-soft: #eef2ff;
+  --brand: #4338ca;
+  --brand-soft: #eef0ff;
+  --on-brand: #ffffff;
 
   --pos: #067647;
-  --pos-soft: #ecfdf3;
+  --pos-soft: #e9f9ef;
   --neg: #b42318;
-  --neg-soft: #fef3f2;
-  --warn: #b54708;
-  --warn-soft: #fffaeb;
+  --neg-soft: #fdf0ee;
+  --warn: #a8480c;
+  --warn-soft: #fff6e5;
+
+  --shadow-card: 0 1px 2px rgba(15, 17, 21, 0.04);
+  --shadow-pop: 0 12px 32px rgba(15, 17, 21, 0.12), 0 2px 6px rgba(15, 17, 21, 0.06);
 }
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --bg: #0b0e14;
-    --surface: #121722;
-    --surface-2: #1a2130;
-    --border: #232b3a;
-    --ink: #eef2f8;
-    --muted: #94a0b4;
-    --faint: #6b7688;
+    --bg: #0a0b0e;
+    --surface: #111318;
+    --surface-2: #191c23;
+    --border: #22262f;
+    --border-strong: #2f3440;
+    --ink: #eceef2;
+    --muted: #9aa1ae;
+    --faint: #6b7281;
 
-    --brand: #818cf8;
-    --brand-soft: #1e2338;
+    --brand: #939bff;
+    --brand-soft: #1b1e38;
+    --on-brand: #0b0d1c;
+
     --pos: #4ade80;
     --pos-soft: #10261a;
     --neg: #f87171;
     --neg-soft: #2a1514;
     --warn: #fbbf24;
     --warn-soft: #2a2010;
+
+    --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.3);
+    --shadow-pop: 0 16px 40px rgba(0, 0, 0, 0.5);
   }
 }
 
 :root[data-theme="dark"] {
-  --bg: #0b0e14;
-  --surface: #121722;
-  --surface-2: #1a2130;
-  --border: #232b3a;
-  --ink: #eef2f8;
-  --muted: #94a0b4;
-  --faint: #6b7688;
-  --brand: #818cf8;
-  --brand-soft: #1e2338;
+  --bg: #0a0b0e;
+  --surface: #111318;
+  --surface-2: #191c23;
+  --border: #22262f;
+  --border-strong: #2f3440;
+  --ink: #eceef2;
+  --muted: #9aa1ae;
+  --faint: #6b7281;
+
+  --brand: #939bff;
+  --brand-soft: #1b1e38;
+  --on-brand: #0b0d1c;
+
   --pos: #4ade80;
   --pos-soft: #10261a;
   --neg: #f87171;
   --neg-soft: #2a1514;
   --warn: #fbbf24;
   --warn-soft: #2a2010;
+
+  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-pop: 0 16px 40px rgba(0, 0, 0, 0.5);
 }
 
 * {
@@ -74,12 +97,30 @@ body {
   margin: 0;
 }
 
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
 body {
   background: var(--bg);
   color: var(--ink);
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
+  -webkit-tap-highlight-color: transparent;
+  overflow-x: hidden;
+}
+
+/* one clear focus ring for keyboard users, everywhere */
+:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+  border-radius: 8px;
+}
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline-offset: 0;
 }
 
 /* tabular numbers for money */
@@ -124,5 +165,56 @@ body {
   to { opacity: 1; transform: none; }
 }
 .animate-pop { animation: pop-in 0.16s ease-out; }
+
+/* bottom sheet on phones, pop on larger screens */
+@keyframes sheet-up {
+  from { transform: translateY(100%); }
+  to { transform: none; }
+}
+.animate-sheet { animation: sheet-up 0.26s cubic-bezier(0.22, 1, 0.36, 1); }
+@media (min-width: 640px) {
+  .animate-sheet { animation: pop-in 0.16s ease-out; }
+}
+
+/* touch feedback */
+.tap {
+  touch-action: manipulation;
+  transition: transform 0.12s ease, background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+.tap:active { transform: scale(0.97); }
+
+@keyframes sheet-down { to { transform: translateY(100%); } }
+@keyframes fade-out { to { opacity: 0; } }
+.animate-sheet-out { animation: sheet-down 0.18s ease-in forwards; }
+.animate-fade-out { animation: fade-out 0.18s ease-in forwards; }
+@media (min-width: 640px) {
+  .animate-sheet-out { animation: fade-out 0.14s ease-in forwards; }
+}
+
+/* each page eases in when you navigate */
+@keyframes page-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: none; }
+}
+.animate-page { animation: page-in 0.2s ease-out; }
+
+/* chart bars grow from the baseline */
+@keyframes bar-grow {
+  from { transform: scaleY(0); }
+  to { transform: scaleY(1); }
+}
+.animate-bar { transform-origin: bottom; animation: bar-grow 0.5s cubic-bezier(0.22, 1, 0.36, 1) both; }
+
+button, a, select, input, label { touch-action: manipulation; }
+
+.no-scrollbar { scrollbar-width: none; }
+.no-scrollbar::-webkit-scrollbar { display: none; }
+
 @keyframes fade-in { from { opacity: 0 } to { opacity: 1 } }
 .animate-fade { animation: fade-in 0.15s ease-out; }
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-pop, .animate-fade, .animate-sheet, .animate-page, .animate-bar { animation: none; }
+  .animate-sheet-out, .animate-fade-out { animation-duration: 0.01s; }
+  .tap:active { transform: none; }
+}

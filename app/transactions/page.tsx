@@ -1,13 +1,14 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Filter } from "lucide-react";
+import { SlidersHorizontal } from "lucide-react";
+import clsx from "clsx";
 import { useStore } from "@/lib/store";
 import { useUI } from "@/components/quick-add";
 import { activeTx } from "@/lib/calc";
 import { relativeDay } from "@/lib/format";
 import { PageTitle, Card, Button, EmptyState, Skeleton } from "@/components/ui";
-import { TxRow } from "@/components/widgets";
+import { TxList } from "@/components/tx-list";
 import { Select, Input } from "@/components/form";
 import { TxDetail } from "@/components/tx-detail";
 import type { Transaction, TxType } from "@/lib/types";
@@ -26,6 +27,8 @@ export default function TransactionsPage() {
   const [accountId, setAccountId] = useState("");
   const [limit, setLimit] = useState(PAGE);
   const [selected, setSelected] = useState<Transaction | null>(null);
+  const [showFilters, setShowFilters] = useState(false);
+  const extraFilters = [categoryId, who, accountId].filter(Boolean).length;
 
   const filtered = useMemo(() => {
     const term = q.trim().toLowerCase();
@@ -70,17 +73,42 @@ export default function TransactionsPage() {
 
       {/* Filters */}
       <Card className="mb-5 p-3">
-        <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-muted">
-          <Filter size={15} /> تصفية
+        <div className="flex gap-2">
+          <Input type="search" placeholder="بحث…" value={q} onChange={(e) => setQ(e.target.value)} className="min-w-0 flex-1" />
+          <button
+            type="button"
+            onClick={() => setShowFilters((v) => !v)}
+            aria-expanded={showFilters}
+            aria-label="تصفية"
+            className={clsx(
+              "tap relative flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border sm:hidden",
+              showFilters || extraFilters ? "border-brand bg-brand-soft text-brand" : "border-border bg-surface text-muted"
+            )}
+          >
+            <SlidersHorizontal size={18} />
+            {extraFilters > 0 && (
+              <span className="absolute -top-1.5 -left-1.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-brand px-1 text-[10px] font-bold text-on-brand">
+                {extraFilters}
+              </span>
+            )}
+          </button>
         </div>
-        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-5">
-          <Input placeholder="بحث…" value={q} onChange={(e) => setQ(e.target.value)} />
-          <Select value={type} onChange={(e) => setType(e.target.value as TxType | "")}>
-            <option value="">كل الأنواع</option>
-            <option value="expense">مصروف</option>
-            <option value="income">دخل</option>
-            <option value="transfer">تحويل</option>
-          </Select>
+        <div className="no-scrollbar -mx-3 mt-2 flex gap-2 overflow-x-auto px-3">
+          {([["", "الكل"], ["expense", "مصروف"], ["income", "دخل"], ["transfer", "تحويل"]] as const).map(([val, label]) => (
+            <button
+              key={val}
+              type="button"
+              onClick={() => setType(val)}
+              className={clsx(
+                "tap shrink-0 rounded-full border px-4 py-2 text-sm font-semibold",
+                type === val ? "border-brand bg-brand-soft text-brand" : "border-border bg-surface text-muted"
+              )}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+        <div className={clsx("mt-2 grid-cols-1 gap-2 sm:grid sm:grid-cols-3", showFilters ? "grid" : "hidden")}>
           <Select value={categoryId} onChange={(e) => setCategoryId(e.target.value)}>
             <option value="">كل الفئات</option>
             {db.categories.map((c) => (
@@ -117,9 +145,7 @@ export default function TransactionsPage() {
             <div key={day}>
               <p className="mb-1 px-1 text-xs font-bold text-muted">{relativeDay(day)}</p>
               <Card className="p-2">
-                {items.map((t) => (
-                  <TxRow key={t.id} tx={t} category={cat(t.categoryId)} member={mem(t.memberId)} currency={cur} onClick={() => setSelected(t)} />
-                ))}
+                <TxList items={items} onSelect={setSelected} hideDate hideHead />
               </Card>
             </div>
           ))}

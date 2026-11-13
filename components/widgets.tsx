@@ -12,12 +12,14 @@ export function StatTile({
   tone = "ink",
   icon,
   hint,
+  delta,
 }: {
   label: string;
   value: string;
   tone?: "ink" | "pos" | "neg" | "brand";
   icon?: string;
   hint?: string;
+  delta?: React.ReactNode;
 }) {
   const toneCls = {
     ink: "text-ink",
@@ -26,18 +28,47 @@ export function StatTile({
     brand: "text-brand",
   }[tone];
   return (
-    <div className="rounded-2xl border border-border bg-surface p-4 shadow-card">
-      <div className="mb-2 flex items-center justify-between">
-        <p className="text-xs font-semibold text-muted">{label}</p>
-        {icon && (
-          <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-surface-2 text-muted">
-            <Icon name={icon} size={15} />
-          </span>
-        )}
+    <div className="min-w-0 rounded-2xl border border-border bg-surface p-3.5 shadow-card md:p-4">
+      <div className="mb-2 flex items-center gap-2 text-muted">
+        {icon && <Icon name={icon} size={15} className="shrink-0" />}
+        <p className="truncate text-xs font-medium">{label}</p>
       </div>
-      <p className={clsx("tnum text-2xl font-extrabold", toneCls)}>{value}</p>
-      {hint && <p className="mt-1 text-xs text-muted">{hint}</p>}
+      <p className={clsx("tnum truncate text-xl font-bold tracking-tight md:text-2xl", toneCls)}>{value}</p>
+      {(hint || delta) && (
+        <p className="mt-1.5 flex items-center gap-1.5 truncate text-xs text-muted">
+          {delta}
+          {hint}
+        </p>
+      )}
     </div>
+  );
+}
+
+// Change against the previous period. `goodWhenUp` says which
+// direction is good news (income up = good, spending up = bad).
+export function Delta({ now, prev, goodWhenUp = false }: { now: number; prev: number; goodWhenUp?: boolean }) {
+  if (!prev) return null;
+  const d = ((now - prev) / Math.abs(prev)) * 100;
+  if (Math.abs(d) < 0.5) return <span className="font-semibold text-faint">بلا تغيير</span>;
+  const up = d > 0;
+  const good = up === goodWhenUp;
+  return (
+    <span className={clsx("tnum inline-flex items-center gap-0.5 font-semibold", good ? "text-pos" : "text-neg")}>
+      <Icon name={up ? "ArrowUpRight" : "ArrowDownRight"} size={13} />
+      {Math.round(Math.abs(d))}%
+    </span>
+  );
+}
+
+export function Avatar({ name, color, size = 28 }: { name: string; color?: string; size?: number }) {
+  return (
+    <span
+      className="flex shrink-0 items-center justify-center rounded-full font-bold text-white"
+      style={{ background: color ?? "#64748b", width: size, height: size, fontSize: Math.round(size * 0.42) }}
+      aria-hidden
+    >
+      {name.trim().slice(0, 1) || "؟"}
+    </span>
   );
 }
 
@@ -88,7 +119,7 @@ export function TxRow({
   return (
     <button
       onClick={onClick}
-      className="flex w-full items-center gap-3 px-2 py-2.5 text-right transition-colors hover:bg-surface-2 rounded-xl"
+      className="tap flex w-full items-center gap-3 rounded-xl px-2 py-3 text-right hover:bg-surface-2 active:bg-surface-2"
     >
       {isTransfer ? (
         <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-surface-2 text-muted">
