@@ -44,7 +44,7 @@ export default function NotificationsPage() {
                   <p className="text-xs text-muted">{c.label} · {relativeDay(n.at)}</p>
                 </div>
                 {!n.read && (
-                  <button onClick={() => markNotificationRead(n.id)} className="text-xs font-semibold text-brand hover:underline">
+                  <button onClick={() => markNotificationRead(n.id)} className="tap -my-1 shrink-0 rounded-lg px-2.5 py-2.5 text-xs font-semibold text-brand hover:bg-brand-soft">
                     تعليم كمقروء
                   </button>
                 )}

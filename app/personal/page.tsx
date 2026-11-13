@@ -5,7 +5,8 @@ import { useStore } from "@/lib/store";
 import { activeTx, inMonth, memberSpending, memberIncome, budgetStatus } from "@/lib/calc";
 import { money } from "@/lib/format";
 import { PageTitle, Card, CardHeader, Skeleton, Progress } from "@/components/ui";
-import { StatTile, TxRow } from "@/components/widgets";
+import { StatTile } from "@/components/widgets";
+import { TxList } from "@/components/tx-list";
 import { Select } from "@/components/form";
 import { TxDetail } from "@/components/tx-detail";
 import type { Transaction } from "@/lib/types";
@@ -72,7 +73,7 @@ export default function PersonalPage() {
           {myTx.length === 0 ? (
             <p className="py-8 text-center text-sm text-muted">لا مصروفات شخصية هذا الشهر.</p>
           ) : (
-            myTx.map((t) => <TxRow key={t.id} tx={t} category={cat(t.categoryId)} member={mem(t.memberId)} currency={cur} onClick={() => setSel(t)} />)
+            <TxList items={myTx} onSelect={setSel} />
           )}
         </div>
       </Card>

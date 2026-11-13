@@ -6,13 +6,14 @@ import { useStore } from "@/lib/store";
 import { budgetStatus } from "@/lib/calc";
 import { money, percent } from "@/lib/format";
 import { PageTitle, Card, Button, Badge, EmptyState, Skeleton, Progress } from "@/components/ui";
-import { Modal, Field, Input, Select, Segmented } from "@/components/form";
+import { Modal, Field, Input, Select, Segmented, ConfirmDialog } from "@/components/form";
 import type { Budget } from "@/lib/types";
 
 export default function BudgetsPage() {
   const { db, ready, month, addBudget, deleteBudget } = useStore();
   const cur = db.household.currency;
   const [open, setOpen] = useState(false);
+  const [toDelete, setToDelete] = useState<string | null>(null);
 
   if (!ready) return <Skeleton className="h-96 rounded-2xl" />;
 
@@ -27,7 +28,7 @@ export default function BudgetsPage() {
           <EmptyState title="لا ميزانيات بعد" desc="أنشئ ميزانية لفئة أو للإنفاق الكلّي وسننبّهك قبل تجاوزها." action={<Button onClick={() => setOpen(true)}>+ إنشاء ميزانية</Button>} />
         </Card>
       ) : (
-        <div className="grid gap-3 sm:grid-cols-2">
+        <div className="grid gap-3 sm:grid-cols-2 md:gap-4 xl:grid-cols-3">
           {statuses.map((s) => {
             const tone = s.level === "over" ? "neg" : s.level === "danger" ? "neg" : s.level === "warn" ? "warn" : "pos";
             const badge =
@@ -46,7 +47,7 @@ export default function BudgetsPage() {
                   </div>
                   <div className="flex items-center gap-2">
                     {badge}
-                    <button onClick={() => deleteBudget(s.budget.id)} className="text-faint hover:text-neg" aria-label="حذف"><Trash2 size={15} /></button>
+                    <button onClick={() => setToDelete(s.budget.id)} className="tap -m-2 flex h-9 w-9 items-center justify-center rounded-lg text-faint hover:bg-neg-soft hover:text-neg" aria-label={`حذف ميزانية ${s.budget.name}`}><Trash2 size={15} /></button>
                   </div>
                 </div>
                 <Progress value={s.ratio} tone={tone as "pos" | "warn" | "neg"} />
@@ -64,6 +65,13 @@ export default function BudgetsPage() {
       )}
 
       <AddBudgetModal open={open} onClose={() => setOpen(false)} onSave={(b) => { addBudget(b); setOpen(false); }} />
+      <ConfirmDialog
+        open={toDelete !== null}
+        title="حذف الميزانية؟"
+        message={`ستُحذف ميزانية «${db.budgets.find((b) => b.id === toDelete)?.name ?? ""}». لن تتأثّر معاملاتكم.`}
+        onConfirm={() => { if (toDelete) deleteBudget(toDelete); setToDelete(null); }}
+        onCancel={() => setToDelete(null)}
+      />
     </div>
   );
 }

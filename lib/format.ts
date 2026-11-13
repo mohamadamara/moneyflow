@@ -73,3 +73,14 @@ export function relativeDay(iso: string): string {
   if (diff > 0 && diff < 7) return `بعد ${diff} أيام`;
   return fmtShort(iso);
 }
+
+const MONTH_SHORT = new Intl.DateTimeFormat("ar", { month: "short" });
+export function fmtMonthShort(iso: string): string {
+  return MONTH_SHORT.format(new Date(iso));
+}
+
+const COMPACT = new Intl.NumberFormat("ar-EG-u-nu-latn", { notation: "compact", maximumFractionDigits: 1 });
+// 12500 -> "12.5 ألف" — for chart axes where space is tight
+export function compact(n: number): string {
+  return COMPACT.format(n);
+}

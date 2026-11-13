@@ -75,7 +75,7 @@ export function TxDetail({ tx, onClose }: { tx: Transaction | null; onClose: () 
                 <Trash2 size={16} /> حذف
               </Button>
               <div className="flex-1" />
-              <Button variant="outline" onClick={onClose}>
+              <Button variant="outline" className="max-sm:hidden" onClick={onClose}>
                 إغلاق
               </Button>
               <Button onClick={save}>حفظ التعديلات</Button>

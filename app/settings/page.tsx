@@ -6,7 +6,7 @@ import { useStore } from "@/lib/store";
 import { useAuth } from "@/lib/auth-context";
 import { PageTitle, Card, CardHeader, Button, Badge } from "@/components/ui";
 import { LogOut } from "lucide-react";
-import { Field, Input, Select, Modal } from "@/components/form";
+import { Field, Input, Select, Modal, ConfirmDialog } from "@/components/form";
 import { transactionsToCSV, downloadText, parseCSV } from "@/lib/csv";
 import type { CurrencyCode, MemberRole, Transaction } from "@/lib/types";
 
@@ -17,6 +17,7 @@ export default function SettingsPage() {
   const auth = useAuth();
   const [name, setName] = useState("");
   const [theme, setTheme] = useState<"light" | "dark" | "system">("system");
+  const [removeId, setRemoveId] = useState<string | null>(null);
   const [importOpen, setImportOpen] = useState(false);
   const [confirmReset, setConfirmReset] = useState(false);
   const [newMember, setNewMember] = useState("");
@@ -83,8 +84,8 @@ export default function SettingsPage() {
                   <Badge tone={m.role === "owner" ? "brand" : "neutral"}>{ROLE_LABEL[m.role]}</Badge>
                   {m.role !== "owner" && (
                     <button
-                      onClick={() => updateHousehold({ members: db.household.members.filter((x) => x.id !== m.id) })}
-                      className="text-faint hover:text-neg" aria-label="إزالة"
+                      onClick={() => setRemoveId(m.id)}
+                      className="tap -m-2 flex h-10 w-10 items-center justify-center rounded-lg text-faint hover:bg-neg-soft hover:text-neg" aria-label="إزالة"
                     ><Trash2 size={15} /></button>
                   )}
                 </div>
@@ -174,6 +175,14 @@ export default function SettingsPage() {
       </div>
 
       <ImportModal open={importOpen} onClose={() => setImportOpen(false)} onImport={(txs) => { txs.forEach((t) => addTransaction(t)); setImportOpen(false); }} />
+      <ConfirmDialog
+        open={removeId !== null}
+        title="إزالة فرد من الأسرة؟"
+        message={`سيُزال «${db.household.members.find((x) => x.id === removeId)?.name ?? ""}» من الأسرة. تبقى معاملاته السابقة كما هي.`}
+        confirmLabel="إزالة"
+        onConfirm={() => { updateHousehold({ members: db.household.members.filter((x) => x.id !== removeId) }); setRemoveId(null); }}
+        onCancel={() => setRemoveId(null)}
+      />
     </div>
   );
 }
@@ -227,7 +236,7 @@ function ImportModal({ open, onClose, onImport }: { open: boolean; onClose: () =
       {rows.length === 0 ? (
         <div>
           <p className="mb-4 text-sm text-muted">اختر ملف CSV يحتوي على أعمدة: التاريخ، الوصف، المبلغ. القيم الموجبة دخل والسالبة مصروف.</p>
-          <input type="file" accept=".csv,text/csv" onChange={onFile} className="block w-full text-sm text-muted file:ml-3 file:rounded-xl file:border-0 file:bg-brand file:px-4 file:py-2 file:text-sm file:font-semibold file:text-white" />
+          <input type="file" accept=".csv,text/csv" onChange={onFile} className="block w-full text-sm text-muted file:ml-3 file:rounded-xl file:border-0 file:bg-brand file:px-4 file:py-2 file:text-sm file:font-semibold file:text-on-brand" />
         </div>
       ) : (
         <div>
