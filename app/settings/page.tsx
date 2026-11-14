@@ -138,11 +138,11 @@ export default function SettingsPage() {
             <div className="flex-1" />
             {mode === "local" && (confirmReset ? (
               <div className="flex gap-2">
-                <Button variant="danger" onClick={() => { resetDemo(); setConfirmReset(false); }}>تأكيد إعادة التعيين</Button>
+                <Button variant="danger" onClick={() => { resetDemo(); setConfirmReset(false); }}>تأكيد حذف كل البيانات</Button>
                 <Button variant="ghost" onClick={() => setConfirmReset(false)}>تراجع</Button>
               </div>
             ) : (
-              <Button variant="ghost" className="!text-neg" onClick={() => setConfirmReset(true)}><RotateCcw size={16} /> إعادة تعيين البيانات التجريبية</Button>
+              <Button variant="ghost" className="!text-neg" onClick={() => setConfirmReset(true)}><RotateCcw size={16} /> حذف كل البيانات والبدء من الصفر</Button>
             ))}
           </div>
         </Card>

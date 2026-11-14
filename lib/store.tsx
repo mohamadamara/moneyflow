@@ -18,7 +18,9 @@ import { StoreContext, type StoreValue } from "./store-context";
 
 export { useStore } from "./store-context";
 
-const STORAGE_KEY = "hmos:v1";
+// v2: the app now starts empty. The old key (hmos:v1) held the demo data
+// and is simply no longer read.
+const STORAGE_KEY = "hmos:v2";
 
 function loadDB(): Database {
   if (typeof window === "undefined") return buildSeed();
