@@ -576,3 +576,6 @@ revoke all on function join_household(text, text) from public, anon;
 grant execute on function create_invite(uuid, uuid) to authenticated;
 grant execute on function join_household(text, text) to authenticated;
 
+
+-- tell the API about the new tables and functions
+notify pgrst, 'reload schema';
