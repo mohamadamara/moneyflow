@@ -13,7 +13,7 @@ export default function ErrorPage({ reset }: { error: Error; reset: () => void }
         <p className="text-lg font-bold text-ink">حدث خطأ غير متوقّع</p>
         <p className="mx-auto mt-1 max-w-sm text-sm text-muted">بياناتكم بأمان. أعد المحاولة، وإن تكرّر الخطأ أعد تحميل الصفحة.</p>
       </div>
-      <button onClick={reset} className="tap inline-flex h-11 items-center gap-2 rounded-xl bg-brand px-4 text-sm font-semibold text-on-brand hover:opacity-90 md:h-9 md:text-[13px]">
+      <button onClick={reset} className="tap inline-flex h-11 items-center gap-2 rounded-xl bg-brand px-4 text-sm font-semibold text-on-brand hover:opacity-90">
         <RotateCw size={16} /> إعادة المحاولة
       </button>
     </div>

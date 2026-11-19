@@ -289,6 +289,8 @@ export async function updateTransactionRow(sb: SupabaseClient, id: string, patch
   if (patch.accountId !== undefined) row.account_id = patch.accountId;
   if (patch.date !== undefined) row.occurred_on = patch.date;
   if (patch.notes !== undefined) row.notes = patch.notes ?? null;
+  if (patch.ownership !== undefined) row.own = patch.ownership;
+  if ("memberId" in patch) row.member_id = patch.memberId ?? null;
   if (patch.deletedAt !== undefined) row.deleted_at = patch.deletedAt ?? null;
   const { error } = await sb.from("transactions").update(row).eq("id", id);
   if (error) throw error;
@@ -407,6 +409,9 @@ export async function updateHouseholdRow(sb: SupabaseClient, householdId: string
 
 export async function addMemberRow(sb: SupabaseClient, householdId: string, name: string, color: string) {
   await sb.from("household_members").insert({ household_id: householdId, display_name: name, role: "partner", color });
+}
+export async function renameMemberRow(sb: SupabaseClient, id: string, name: string) {
+  await sb.from("household_members").update({ display_name: name }).eq("id", id);
 }
 export async function removeMemberRow(sb: SupabaseClient, id: string) {
   await sb.from("household_members").delete().eq("id", id);

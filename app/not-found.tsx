@@ -8,7 +8,7 @@ export default function NotFound() {
         <p className="text-lg font-bold text-ink">الصفحة غير موجودة</p>
         <p className="mt-1 text-sm text-muted">ربما تغيّر الرابط أو حُذفت الصفحة.</p>
       </div>
-      <Link href="/" className="tap inline-flex h-11 items-center rounded-xl bg-brand px-4 text-sm font-semibold text-on-brand hover:opacity-90 md:h-9 md:text-[13px]">
+      <Link href="/" className="tap inline-flex h-11 items-center rounded-xl bg-brand px-4 text-sm font-semibold text-on-brand hover:opacity-90">
         العودة إلى الرئيسية
       </Link>
     </div>

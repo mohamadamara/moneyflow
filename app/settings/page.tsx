@@ -4,25 +4,21 @@ import { useEffect, useState } from "react";
 import { Sun, Moon, Download, Upload, RotateCcw, UserPlus, Trash2 } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { useAuth } from "@/lib/auth-context";
-import { PageTitle, Card, CardHeader, Button, Badge } from "@/components/ui";
+import { Card, CardHeader, Button } from "@/components/ui";
 import { LogOut } from "lucide-react";
 import { Field, Input, Select, Modal, ConfirmDialog } from "@/components/form";
 import { transactionsToCSV, downloadText, parseCSV } from "@/lib/csv";
-import type { CurrencyCode, MemberRole, Transaction } from "@/lib/types";
-
-const ROLE_LABEL: Record<MemberRole, string> = { owner: "المالك", partner: "شريك", viewer: "مشاهد" };
+import type { CurrencyCode, Transaction } from "@/lib/types";
 
 export default function SettingsPage() {
   const { db, ready, updateHousehold, resetDemo, addTransaction, mode } = useStore();
   const auth = useAuth();
-  const [name, setName] = useState("");
   const [theme, setTheme] = useState<"light" | "dark" | "system">("system");
   const [removeId, setRemoveId] = useState<string | null>(null);
   const [importOpen, setImportOpen] = useState(false);
   const [confirmReset, setConfirmReset] = useState(false);
   const [newMember, setNewMember] = useState("");
 
-  useEffect(() => { if (ready) setName(db.household.name); }, [ready, db.household.name]);
   useEffect(() => {
     const saved = (localStorage.getItem("hmos:theme") as typeof theme) || "system";
     setTheme(saved);
@@ -41,10 +37,8 @@ export default function SettingsPage() {
   const supaConnected = mode === "supabase";
 
   return (
-    <div className="max-w-3xl">
-      <PageTitle title="الإعدادات" />
-
-      <div className="space-y-5">
+    <div>
+      <div className="space-y-4">
         {/* Account (real mode) */}
         {mode === "supabase" && (
           <Card>
@@ -61,54 +55,54 @@ export default function SettingsPage() {
           </Card>
         )}
 
-        {/* Household */}
+        {/* People */}
         <Card>
-          <CardHeader title="الأسرة" />
-          <div className="p-5 pt-4">
-            <Field label="اسم الأسرة">
-              <div className="flex gap-2">
-                <Input value={name} onChange={(e) => setName(e.target.value)} />
-                <Button onClick={() => updateHousehold({ name: name.trim() || db.household.name })}>حفظ</Button>
+          <CardHeader title="الأشخاص" sub="اضغط على الاسم لتغييره" />
+          <div className="space-y-2 p-4">
+            {db.household.members.map((m) => (
+              <div key={m.id} className="flex items-center gap-3 rounded-2xl bg-surface-2 p-2 pr-3">
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-bold text-white" style={{ background: m.color }}>{m.name.slice(0, 1)}</span>
+                <input
+                  defaultValue={m.name}
+                  aria-label={`اسم ${m.name}`}
+                  onBlur={(e) => {
+                    const v = e.target.value.trim();
+                    if (v && v !== m.name) updateHousehold({ members: db.household.members.map((x) => (x.id === m.id ? { ...x, name: v } : x)) });
+                    else e.target.value = m.name;
+                  }}
+                  onKeyDown={(e) => e.key === "Enter" && (e.target as HTMLInputElement).blur()}
+                  className="min-w-0 flex-1 bg-transparent py-2 text-[15px] font-bold text-ink outline-none"
+                />
+                {m.role !== "owner" && (
+                  <button
+                    onClick={() => setRemoveId(m.id)}
+                    className="tap flex h-10 w-10 items-center justify-center rounded-full text-faint active:bg-neg-soft active:text-neg" aria-label={`إزالة ${m.name}`}
+                  ><Trash2 size={16} /></button>
+                )}
               </div>
-            </Field>
-
-            <p className="mb-2 mt-4 text-sm font-semibold text-ink">الأعضاء</p>
-            <div className="space-y-2">
-              {db.household.members.map((m) => (
-                <div key={m.id} className="flex items-center gap-3 rounded-xl border border-border p-3">
-                  <span className="flex h-9 w-9 items-center justify-center rounded-full text-sm font-bold text-white" style={{ background: m.color }}>{m.name.slice(0, 1)}</span>
-                  <div className="flex-1">
-                    <p className="text-sm font-semibold text-ink">{m.name}</p>
-                    {m.email && <p className="text-xs text-muted">{m.email}</p>}
-                  </div>
-                  <Badge tone={m.role === "owner" ? "brand" : "neutral"}>{ROLE_LABEL[m.role]}</Badge>
-                  {m.role !== "owner" && (
-                    <button
-                      onClick={() => setRemoveId(m.id)}
-                      className="tap -m-2 flex h-10 w-10 items-center justify-center rounded-lg text-faint hover:bg-neg-soft hover:text-neg" aria-label="إزالة"
-                    ><Trash2 size={15} /></button>
-                  )}
-                </div>
-              ))}
-            </div>
-            <div className="mt-3 flex gap-2">
-              <Input value={newMember} onChange={(e) => setNewMember(e.target.value)} placeholder="اسم عضو جديد" />
-              <Button variant="outline" disabled={!newMember.trim()} onClick={() => {
-                const colors = ["#ec4899", "#0ea5e9", "#14b8a6", "#a855f7", "#f59e0b"];
-                updateHousehold({ members: [...db.household.members, { id: `m-${Date.now().toString(36)}`, name: newMember.trim(), role: "partner", color: colors[db.household.members.length % colors.length] }] });
+            ))}
+            <form
+              className="flex gap-2 pt-1"
+              onSubmit={(e) => {
+                e.preventDefault();
+                if (!newMember.trim()) return;
+                const colors = ["#ec4899", "#0ea5e9", "#f59e0b", "#a855f7", "#14b8a6"];
+                updateHousehold({ members: [...db.household.members, { id: `m-${Date.now().toString(36)}`, name: newMember.trim(), role: "partner", color: colors[(db.household.members.length - 1 + colors.length) % colors.length] }] });
                 setNewMember("");
-              }}>
-                <UserPlus size={16} /> إضافة
+              }}
+            >
+              <Input value={newMember} onChange={(e) => setNewMember(e.target.value)} placeholder="أضف شخصًا (مثال: سارة)" />
+              <Button type="submit" variant="soft" disabled={!newMember.trim()}>
+                <UserPlus size={18} /> أضف
               </Button>
-            </div>
-            <p className="mt-2 text-xs text-muted">دعوة شريك بالبريد الإلكتروني تتطلّب ربط خدمة Supabase (انظر أدناه).</p>
+            </form>
           </div>
         </Card>
 
         {/* Currency & theme */}
         <Card>
           <CardHeader title="التفضيلات" />
-          <div className="grid gap-4 p-5 pt-4 sm:grid-cols-2">
+          <div className="grid gap-4 p-5 pt-4">
             <Field label="العملة">
               <Select value={db.household.currency} onChange={(e) => updateHousehold({ currency: e.target.value as CurrencyCode })}>
                 <option value="ILS">₪ شيكل (ILS)</option>
@@ -118,9 +112,9 @@ export default function SettingsPage() {
               </Select>
             </Field>
             <Field label="المظهر">
-              <div className="flex gap-1 rounded-xl bg-surface-2 p-1">
+              <div className="flex gap-1 rounded-2xl bg-surface-2 p-1">
                 {([["light", "فاتح", Sun], ["dark", "داكن", Moon], ["system", "تلقائي", Sun]] as const).map(([val, label, IconC]) => (
-                  <button key={val} onClick={() => { setTheme(val); applyTheme(val); }} className={`flex flex-1 items-center justify-center gap-1.5 rounded-lg px-2 py-2 text-sm font-semibold ${theme === val ? "bg-surface text-ink shadow-card" : "text-muted"}`}>
+                  <button key={val} onClick={() => { setTheme(val); applyTheme(val); }} className={`tap flex flex-1 items-center justify-center gap-1.5 rounded-xl px-2 py-2.5 text-sm font-bold ${theme === val ? "bg-surface text-ink shadow-card" : "text-muted"}`}>
                     <IconC size={15} /> {label}
                   </button>
                 ))}
@@ -131,15 +125,14 @@ export default function SettingsPage() {
 
         {/* Data */}
         <Card>
-          <CardHeader title="البيانات" sub="بياناتك ملكك — استوردها أو صدّرها في أي وقت" />
-          <div className="flex flex-wrap gap-2 p-5 pt-4">
-            <Button variant="outline" onClick={() => downloadText(`ميزان-تصدير.csv`, transactionsToCSV(db))}><Download size={16} /> تصدير المعاملات</Button>
-            <Button variant="outline" onClick={() => setImportOpen(true)}><Upload size={16} /> استيراد CSV</Button>
-            <div className="flex-1" />
+          <CardHeader title="بياناتك" />
+          <div className="grid gap-2 p-4">
+            <Button variant="outline" onClick={() => downloadText(`ميزان-تصدير.csv`, transactionsToCSV(db))}><Download size={16} /> حفظ نسخة (ملف CSV)</Button>
+            <Button variant="outline" onClick={() => setImportOpen(true)}><Upload size={16} /> إدخال من ملف CSV</Button>
             {mode === "local" && (confirmReset ? (
-              <div className="flex gap-2">
-                <Button variant="danger" onClick={() => { resetDemo(); setConfirmReset(false); }}>تأكيد حذف كل البيانات</Button>
-                <Button variant="ghost" onClick={() => setConfirmReset(false)}>تراجع</Button>
+              <div className="grid grid-cols-2 gap-2">
+                <Button variant="danger" onClick={() => { resetDemo(); setConfirmReset(false); }}>نعم، احذف الكل</Button>
+                <Button variant="outline" onClick={() => setConfirmReset(false)}>تراجع</Button>
               </div>
             ) : (
               <Button variant="ghost" className="!text-neg" onClick={() => setConfirmReset(true)}><RotateCcw size={16} /> حذف كل البيانات والبدء من الصفر</Button>
@@ -147,38 +140,22 @@ export default function SettingsPage() {
           </div>
         </Card>
 
-        {/* Backend status */}
-        <Card>
-          <CardHeader title="الخادم (Supabase)" />
-          <div className="p-5 pt-4 text-sm">
-            <div className="mb-3 flex items-center gap-2">
-              <Badge tone={supaConnected ? "pos" : "warn"}>{supaConnected ? "متّصل" : "الوضع المحلي (تجريبي)"}</Badge>
-            </div>
-            {supaConnected ? (
-              <p className="text-muted">
-                التطبيق متّصل بقاعدة بيانات Supabase. تُحفظ بياناتكم بأمان وتتزامن عبر الأجهزة، ويمكن لأعضاء الأسرة مشاركتها وفق الصلاحيات.
-              </p>
-            ) : (
-              <>
-                <p className="text-muted">
-                  يعمل التطبيق حاليًا في الوضع المحلي وتُحفظ البيانات في متصفّحك. لتفعيل حساب المستخدمين المتعدّدين والمزامنة والدعوات:
-                </p>
-                <ol className="mt-2 list-decimal space-y-1 pr-5 text-muted">
-                  <li>أنشئ مشروعًا على supabase.com</li>
-                  <li>نفّذ ملفّي <code className="rounded bg-surface-2 px-1">supabase/schema.sql</code> ثم <code className="rounded bg-surface-2 px-1">supabase/policies.sql</code></li>
-                  <li>ضع المفاتيح في <code className="rounded bg-surface-2 px-1">.env.local</code> ثم أعد التشغيل</li>
-                </ol>
-              </>
-            )}
-          </div>
+        {/* Where the data lives, in plain words */}
+        <Card className="p-4">
+          <p className="text-[15px] font-bold text-ink">أين تُحفظ بياناتك؟</p>
+          <p className="mt-1 text-sm leading-relaxed text-muted">
+            {supaConnected
+              ? "في حسابك على الإنترنت، وتظهر على كل هاتف تدخل منه بنفس الحساب."
+              : "على هذا الهاتف فقط، ولا تُرسل إلى أي مكان. إذا مسحت بيانات المتصفّح تُمسح معها، فاحفظ نسخة من وقت لآخر."}
+          </p>
         </Card>
       </div>
 
       <ImportModal open={importOpen} onClose={() => setImportOpen(false)} onImport={(txs) => { txs.forEach((t) => addTransaction(t)); setImportOpen(false); }} />
       <ConfirmDialog
         open={removeId !== null}
-        title="إزالة فرد من الأسرة؟"
-        message={`سيُزال «${db.household.members.find((x) => x.id === removeId)?.name ?? ""}» من الأسرة. تبقى معاملاته السابقة كما هي.`}
+        title="إزالة هذا الشخص؟"
+        message={`سيُزال «${db.household.members.find((x) => x.id === removeId)?.name ?? ""}» من القائمة. تبقى عملياته السابقة كما هي.`}
         confirmLabel="إزالة"
         onConfirm={() => { updateHousehold({ members: db.household.members.filter((x) => x.id !== removeId) }); setRemoveId(null); }}
         onCancel={() => setRemoveId(null)}

@@ -1,4 +1,5 @@
 import type {
+  Member,
   Account,
   Bill,
   Budget,
@@ -200,6 +201,78 @@ export function sharedSpending(db: Database, key: string): number {
   return activeTx(db)
     .filter((t) => t.type === "expense" && t.ownership === "shared" && inMonth(t, key))
     .reduce((s, t) => s + t.amount, 0);
+}
+
+// ---------- the shared account ("بيننا") ----------
+// Simple rule: a shared expense belongs to everyone equally, whoever paid.
+// So each person should pay their equal share. If one paid more than their
+// share, the others owe them the difference. Counted month by month.
+
+export interface SharedPerson {
+  member: Member;
+  paid: number; // what this person paid for shared things
+  share: number; // their equal part of all shared things
+  net: number; // paid - share  (> 0 → others owe them)
+}
+
+export interface SharedSummary {
+  total: number; // all shared spending this month
+  people: SharedPerson[];
+  noPayer: number; // shared spending where nobody was chosen as the payer
+  settle: { from: Member; to: Member; amount: number }[];
+  items: Transaction[];
+}
+
+export function sharedSummary(db: Database, key: string): SharedSummary {
+  const members = db.household.members;
+  const n = Math.max(1, members.length);
+  const paid = new Map<string, number>();
+  const share = new Map<string, number>();
+  let total = 0;
+  let noPayer = 0;
+  const items: Transaction[] = [];
+
+  for (const t of activeTx(db)) {
+    if (t.type !== "expense" || !inMonth(t, key)) continue;
+    if (t.ownership !== "shared" && t.ownership !== "split") continue;
+    items.push(t);
+    total += t.amount;
+    const payer = members.find((m) => m.id === t.memberId);
+    if (!payer) {
+      noPayer += t.amount;
+      continue;
+    }
+    paid.set(payer.id, (paid.get(payer.id) ?? 0) + t.amount);
+    if (t.ownership === "split" && t.splits?.length) {
+      for (const s of t.splits) share.set(s.memberId, (share.get(s.memberId) ?? 0) + s.amount);
+    } else {
+      for (const m of members) share.set(m.id, (share.get(m.id) ?? 0) + t.amount / n);
+    }
+  }
+
+  const people = members.map((m) => {
+    const p = paid.get(m.id) ?? 0;
+    const s = share.get(m.id) ?? 0;
+    return { member: m, paid: p, share: s, net: p - s };
+  });
+
+  // who gives whom: the person who is most behind pays the one most ahead
+  const owe = people.filter((p) => p.net < -0.5).map((p) => ({ m: p.member, left: -p.net }));
+  const get = people.filter((p) => p.net > 0.5).map((p) => ({ m: p.member, left: p.net }));
+  const settle: SharedSummary["settle"] = [];
+  for (const o of owe) {
+    for (const g of get) {
+      if (o.left < 0.5) break;
+      if (g.left < 0.5) continue;
+      const amt = Math.min(o.left, g.left);
+      settle.push({ from: o.m, to: g.m, amount: Math.round(amt) });
+      o.left -= amt;
+      g.left -= amt;
+    }
+  }
+
+  items.sort((a, b) => (a.date < b.date ? 1 : -1));
+  return { total, people, noPayer, settle, items };
 }
 
 export function memberIncome(db: Database, key: string, memberId: string): number {

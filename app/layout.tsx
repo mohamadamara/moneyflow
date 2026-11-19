@@ -3,14 +3,15 @@ import "./globals.css";
 import { Providers } from "./providers";
 
 export const metadata: Metadata = {
-  title: "مِيزان · نظام أموال الأسرة",
-  description: "شاهد أموالك بوضوح. اعرف أين تذهب. أدِرها معًا.",
+  title: "مِيزان",
+  description: "مصروفك ودخلك والحساب المشترك، ببساطة على هاتفك.",
+  appleWebApp: { capable: true, title: "ميزان", statusBarStyle: "default" },
 };
 
 export const viewport: Viewport = {
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#f6f6f8" },
-    { media: "(prefers-color-scheme: dark)", color: "#0a0b0e" },
+    { media: "(prefers-color-scheme: light)", color: "#f3f1ec" },
+    { media: "(prefers-color-scheme: dark)", color: "#0e100f" },
   ],
   width: "device-width",
   initialScale: 1,

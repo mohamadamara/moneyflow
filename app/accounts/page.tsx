@@ -41,7 +41,7 @@ export default function AccountsPage() {
         }
       />
 
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-3">
         {db.accounts.map((a) => {
           const bal = accountBalance(db, a.id);
           return (

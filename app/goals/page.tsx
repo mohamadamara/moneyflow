@@ -25,7 +25,7 @@ export default function GoalsPage() {
           <EmptyState title="لا أهداف بعد" desc="أنشئ هدفًا (إجازة، صندوق طوارئ، سيارة…) وتابع تقدّمكم نحوه." action={<Button onClick={() => setOpen(true)}>+ إنشاء هدف</Button>} />
         </Card>
       ) : (
-        <div className="grid gap-3 sm:grid-cols-2">
+        <div className="grid gap-3">
           {db.goals.map((g) => {
             const saved = goalSaved(g);
             const ratio = goalRatio(g);

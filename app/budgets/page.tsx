@@ -28,7 +28,7 @@ export default function BudgetsPage() {
           <EmptyState title="لا ميزانيات بعد" desc="أنشئ ميزانية لفئة أو للإنفاق الكلّي وسننبّهك قبل تجاوزها." action={<Button onClick={() => setOpen(true)}>+ إنشاء ميزانية</Button>} />
         </Card>
       ) : (
-        <div className="grid gap-3 sm:grid-cols-2 md:gap-4 xl:grid-cols-3">
+        <div className="grid gap-3">
           {statuses.map((s) => {
             const tone = s.level === "over" ? "neg" : s.level === "danger" ? "neg" : s.level === "warn" ? "warn" : "pos";
             const badge =

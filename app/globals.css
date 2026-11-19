@@ -3,7 +3,7 @@
 @tailwind utilities;
 
 /* ============================================================
-   Mizan design system (V6)
+   Mizan design system (V7 · phone app)
    Every colour in the app comes from these tokens, so light and
    dark mode stay in step. Change a value here, not in a page.
    ============================================================ */
@@ -11,80 +11,89 @@
   --font-sans: "IBM Plex Sans Arabic", "Segoe UI", Tahoma, "Helvetica Neue", Arial,
     system-ui, sans-serif;
 
-  --bg: #f6f6f8;
+  --bg: #f3f1ec;
   --surface: #ffffff;
-  --surface-2: #f1f2f5;
-  --border: #e6e7ec;
-  --border-strong: #d3d6de;
-  --ink: #0f1115;
-  --muted: #5b6270;
-  --faint: #8d94a3;
+  --surface-2: #efede7;
+  --border: #e5e2da;
+  --border-strong: #d4d0c6;
+  --ink: #1b1c1a;
+  --muted: #66655f;
+  --faint: #99968d;
 
-  --brand: #4338ca;
-  --brand-soft: #eef0ff;
+  --brand: #0d7a5f;
+  --hero-a: #10916f;
+  --hero-b: #0a5543;
+  --brand-soft: #e2f2eb;
   --on-brand: #ffffff;
 
-  --pos: #067647;
-  --pos-soft: #e9f9ef;
-  --neg: #b42318;
-  --neg-soft: #fdf0ee;
-  --warn: #a8480c;
-  --warn-soft: #fff6e5;
+  --pos: #12804f;
+  --pos-soft: #e5f5ec;
+  --neg: #c2410c;
+  --neg-soft: #fcefe7;
+  --warn: #b45309;
+  --warn-soft: #fdf3e2;
 
-  --shadow-card: 0 1px 2px rgba(15, 17, 21, 0.04);
-  --shadow-pop: 0 12px 32px rgba(15, 17, 21, 0.12), 0 2px 6px rgba(15, 17, 21, 0.06);
+  --frame: #e4e1d9;
+  --shadow-card: 0 1px 2px rgba(27, 28, 26, 0.04), 0 4px 14px rgba(27, 28, 26, 0.04);
+  --shadow-pop: 0 18px 40px rgba(27, 28, 26, 0.16), 0 2px 6px rgba(27, 28, 26, 0.06);
 }
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --bg: #0a0b0e;
-    --surface: #111318;
-    --surface-2: #191c23;
-    --border: #22262f;
-    --border-strong: #2f3440;
-    --ink: #eceef2;
-    --muted: #9aa1ae;
-    --faint: #6b7281;
+    --bg: #0e100f;
+    --surface: #171a18;
+    --surface-2: #202421;
+    --border: #2a2f2c;
+    --border-strong: #373d39;
+    --ink: #edeeea;
+    --muted: #a3a8a1;
+    --faint: #737a73;
 
-    --brand: #939bff;
-    --brand-soft: #1b1e38;
-    --on-brand: #0b0d1c;
+    --brand: #3fd3a2;
+    --hero-a: #146f55;
+    --hero-b: #0b3a2e;
+    --brand-soft: #12291f;
+    --on-brand: #04241a;
 
     --pos: #4ade80;
-    --pos-soft: #10261a;
-    --neg: #f87171;
-    --neg-soft: #2a1514;
+    --pos-soft: #11271a;
+    --neg: #fb8b5b;
+    --neg-soft: #2c1910;
     --warn: #fbbf24;
     --warn-soft: #2a2010;
 
+    --frame: #070807;
     --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.3);
-    --shadow-pop: 0 16px 40px rgba(0, 0, 0, 0.5);
+    --shadow-pop: 0 18px 44px rgba(0, 0, 0, 0.55);
   }
 }
 
 :root[data-theme="dark"] {
-  --bg: #0a0b0e;
-  --surface: #111318;
-  --surface-2: #191c23;
-  --border: #22262f;
-  --border-strong: #2f3440;
-  --ink: #eceef2;
-  --muted: #9aa1ae;
-  --faint: #6b7281;
+  --bg: #0e100f;
+  --surface: #171a18;
+  --surface-2: #202421;
+  --border: #2a2f2c;
+  --border-strong: #373d39;
+  --ink: #edeeea;
+  --muted: #a3a8a1;
+  --faint: #737a73;
 
-  --brand: #939bff;
-  --brand-soft: #1b1e38;
-  --on-brand: #0b0d1c;
+  --brand: #3fd3a2;
+  --hero-a: #146f55;
+  --hero-b: #0b3a2e;
+  --brand-soft: #12291f;
+  --on-brand: #04241a;
 
   --pos: #4ade80;
-  --pos-soft: #10261a;
-  --neg: #f87171;
-  --neg-soft: #2a1514;
+  --pos-soft: #11271a;
+  --neg: #fb8b5b;
+  --neg-soft: #2c1910;
   --warn: #fbbf24;
   --warn-soft: #2a2010;
 
+  --frame: #070807;
   --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.3);
-  --shadow-pop: 0 16px 40px rgba(0, 0, 0, 0.5);
+  --shadow-pop: 0 18px 44px rgba(0, 0, 0, 0.55);
 }
 
 * {
@@ -102,7 +111,8 @@ html {
 }
 
 body {
-  background: var(--bg);
+  /* on a wide screen the app sits in a phone-sized column */
+  background: var(--frame);
   color: var(--ink);
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
@@ -117,10 +127,11 @@ body {
   outline-offset: 2px;
   border-radius: 8px;
 }
+/* fields show focus with their own border instead */
 input:focus-visible,
 select:focus-visible,
 textarea:focus-visible {
-  outline-offset: 0;
+  outline: none;
 }
 
 /* tabular numbers for money */
@@ -172,9 +183,6 @@ textarea:focus-visible {
   to { transform: none; }
 }
 .animate-sheet { animation: sheet-up 0.26s cubic-bezier(0.22, 1, 0.36, 1); }
-@media (min-width: 640px) {
-  .animate-sheet { animation: pop-in 0.16s ease-out; }
-}
 
 /* touch feedback */
 .tap {
@@ -187,9 +195,6 @@ textarea:focus-visible {
 @keyframes fade-out { to { opacity: 0; } }
 .animate-sheet-out { animation: sheet-down 0.18s ease-in forwards; }
 .animate-fade-out { animation: fade-out 0.18s ease-in forwards; }
-@media (min-width: 640px) {
-  .animate-sheet-out { animation: fade-out 0.14s ease-in forwards; }
-}
 
 /* each page eases in when you navigate */
 @keyframes page-in {
@@ -198,12 +203,24 @@ textarea:focus-visible {
 }
 .animate-page { animation: page-in 0.2s ease-out; }
 
-/* chart bars grow from the baseline */
-@keyframes bar-grow {
-  from { transform: scaleY(0); }
-  to { transform: scaleY(1); }
+/* the phone frame: full screen on a phone, a centred column on a computer */
+.app-frame {
+  width: 100%;
+  max-width: 480px;
+  margin: 0 auto;
+  min-height: 100dvh;
+  background: var(--bg);
+  position: relative;
 }
-.animate-bar { transform-origin: bottom; animation: bar-grow 0.5s cubic-bezier(0.22, 1, 0.36, 1) both; }
+@media (min-width: 520px) {
+  .app-frame { box-shadow: 0 0 0 1px var(--border), 0 10px 40px rgba(0, 0, 0, 0.08); }
+}
+
+/* the green card at the top of the home screen */
+.hero {
+  background: radial-gradient(120% 140% at 100% 0%, var(--hero-a) 0%, var(--hero-b) 75%);
+  color: #fff;
+}
 
 button, a, select, input, label { touch-action: manipulation; }
 
@@ -214,7 +231,7 @@ button, a, select, input, label { touch-action: manipulation; }
 .animate-fade { animation: fade-in 0.15s ease-out; }
 
 @media (prefers-reduced-motion: reduce) {
-  .animate-pop, .animate-fade, .animate-sheet, .animate-page, .animate-bar { animation: none; }
+  .animate-pop, .animate-fade, .animate-sheet, .animate-page { animation: none; }
   .animate-sheet-out, .animate-fade-out { animation-duration: 0.01s; }
   .tap:active { transform: none; }
 }

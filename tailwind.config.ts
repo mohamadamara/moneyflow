@@ -32,8 +32,9 @@ const config: Config = {
         sans: ["var(--font-sans)", "system-ui", "sans-serif"],
       },
       borderRadius: {
-        xl: "12px",
-        "2xl": "16px",
+        xl: "14px",
+        "2xl": "18px",
+        "3xl": "24px",
       },
       boxShadow: {
         card: "var(--shadow-card)",

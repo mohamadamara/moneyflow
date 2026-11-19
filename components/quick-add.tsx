@@ -32,14 +32,14 @@ const CURRENCY_SYMBOL: Record<string, string> = { ILS: "₪", USD: "$", EUR: "�
 
 // Remember the last account / owner so the next entry needs fewer taps.
 const PREFS_KEY = "hmos:quickadd";
-function loadPrefs(): { accountId?: string; who?: string } {
+function loadPrefs(): { accountId?: string; payer?: string; forUs?: boolean } {
   try {
     return JSON.parse(window.localStorage.getItem(PREFS_KEY) ?? "{}");
   } catch {
     return {};
   }
 }
-function savePrefs(p: { accountId: string; who: string }) {
+function savePrefs(p: { accountId: string; payer: string; forUs: boolean }) {
   try {
     window.localStorage.setItem(PREFS_KEY, JSON.stringify(p));
   } catch {
@@ -48,9 +48,8 @@ function savePrefs(p: { accountId: string; who: string }) {
 }
 
 const TYPE_OPTIONS: { value: TxType; label: string; on: string }[] = [
-  { value: "expense", label: "مصروف", on: "bg-neg-soft text-neg" },
-  { value: "income", label: "دخل", on: "bg-pos-soft text-pos" },
-  { value: "transfer", label: "تحويل", on: "bg-brand-soft text-brand" },
+  { value: "expense", label: "صرفت", on: "bg-surface text-neg shadow-card" },
+  { value: "income", label: "دخل لي", on: "bg-surface text-pos shadow-card" },
 ];
 
 const VISIBLE_CATS = 8;
@@ -83,7 +82,7 @@ export function UIProvider({ children }: { children: React.ReactNode }) {
       <AddTransactionModal open={open} onClose={() => setOpen(false)} type={type} setType={setType} onSaved={showToast} />
       {toast && (
         <div className="pointer-events-none fixed inset-x-0 top-4 z-[60] flex justify-center px-4" role="status">
-          <div className="animate-pop flex items-center gap-2 rounded-full bg-ink px-4 py-2 text-sm font-semibold text-surface shadow-pop">
+          <div className="animate-pop flex items-center gap-2 rounded-full bg-ink px-4 py-2.5 text-sm font-bold text-bg shadow-pop">
             <Check size={16} />
             {toast}
           </div>
@@ -107,8 +106,8 @@ function Chip({
       type="button"
       onClick={onClick}
       className={clsx(
-        "tap shrink-0 rounded-full border px-3.5 py-2 text-sm font-semibold transition-colors",
-        active ? "border-brand bg-brand-soft text-brand" : "border-border bg-surface text-muted"
+        "tap shrink-0 rounded-full px-4 py-2 text-sm font-bold transition-colors",
+        active ? "bg-ink text-bg" : "bg-surface-2 text-muted"
       )}
     >
       {children}
@@ -139,8 +138,9 @@ function AddTransactionModal({
   const [categoryId, setCategoryId] = useState("");
   const [accountId, setAccountId] = useState("");
   const [toAccountId, setToAccountId] = useState("");
-  const [who, setWho] = useState<string>("shared"); // memberId | "shared"
-  const [split, setSplit] = useState(false);
+  const [payer, setPayer] = useState(""); // who paid (or whose income it is)
+  const [forUs, setForUs] = useState(true); // a shared expense, split equally
+  const many = members.length > 1;
   const [date, setDate] = useState(localISO());
   const [notes, setNotes] = useState("");
   const [allCats, setAllCats] = useState(false);
@@ -156,7 +156,6 @@ function AddTransactionModal({
     setMerchant("");
     setCategoryId("");
     setNotes("");
-    setSplit(false);
   }, []);
 
   // reset when opened; restore the last-used account and owner
@@ -172,7 +171,8 @@ function AddTransactionModal({
     const acc = accounts.find((a) => a.id === prefs.accountId) ?? accounts[0];
     setAccountId(acc?.id ?? "");
     setToAccountId(accounts.find((a) => a.id !== acc?.id)?.id ?? "");
-    setWho(prefs.who && (prefs.who === "shared" || members.some((m) => m.id === prefs.who)) ? prefs.who : "shared");
+    setPayer(members.some((m) => m.id === prefs.payer) ? prefs.payer! : members[0]?.id ?? "");
+    setForUs(prefs.forUs ?? true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
@@ -260,19 +260,12 @@ function AddTransactionModal({
 
   function save(keepOpen: boolean) {
     if (!valid) return;
-    let ownership: Ownership = who === "shared" ? "shared" : "personal";
-    let splits;
-    let memberId: string | undefined = who === "shared" ? undefined : who;
-
-    if (type === "expense" && who === "shared" && split && members.length > 1) {
-      ownership = "split";
-      const each = Math.round((amt / members.length) * 100) / 100;
-      splits = members.map((m, i) => ({
-        memberId: m.id,
-        amount: i === members.length - 1 ? Math.round((amt - each * (members.length - 1)) * 100) / 100 : each,
-      }));
-      memberId = members[0].id;
-    }
+    // shared = for all of us, split equally; the payer is remembered so
+    // the "بيننا" page can say who owes whom
+    const payerId = members.some((m) => m.id === payer) ? payer : members[0]?.id;
+    const ownership: Ownership =
+      type === "transfer" ? "shared" : type === "expense" && many && forUs ? "shared" : "personal";
+    const memberId: string | undefined = type === "transfer" ? undefined : payerId;
 
     // The description is optional: fall back to the category name.
     const fallback = type === "transfer" ? "تحويل بين الحسابات" : picked?.name ?? (type === "income" ? "دخل" : "مصروف");
@@ -287,11 +280,10 @@ function AddTransactionModal({
       toAccountId: type === "transfer" ? toAccountId : undefined,
       ownership,
       memberId,
-      splits,
       notes: notes.trim() || undefined,
       recurrence: "none",
     });
-    savePrefs({ accountId, who });
+    savePrefs({ accountId, payer: payerId ?? "", forUs });
     onSaved(`تم الحفظ · ${symbol}${amt}`);
 
     if (keepOpen) {
@@ -309,11 +301,11 @@ function AddTransactionModal({
     <Modal
       open={open}
       onClose={onClose}
-      title="إضافة جديدة"
+      title={type === "transfer" ? "تحويل بين الحسابات" : "إضافة"}
       footer={
         <div className="flex gap-2">
-          <Button variant="outline" size="lg" className="tap flex-1" onClick={() => save(true)} disabled={!valid}>
-            حفظ وإضافة أخرى
+          <Button variant="soft" size="lg" className="tap" onClick={() => save(true)} disabled={!valid}>
+            + أخرى
           </Button>
           <Button size="lg" className="tap flex-1" onClick={() => save(false)} disabled={!valid}>
             حفظ
@@ -327,15 +319,16 @@ function AddTransactionModal({
           save(false);
         }}
       >
-        {/* type */}
-        <div className="mb-4 flex gap-1 rounded-xl bg-surface-2 p-1">
+        {/* type: spent or received (transfers only come from the accounts page) */}
+        {type !== "transfer" && (
+        <div className="mb-4 flex gap-1 rounded-2xl bg-surface-2 p-1">
           {TYPE_OPTIONS.map((o) => (
             <button
               key={o.value}
               type="button"
               onClick={() => setType(o.value)}
               className={clsx(
-                "tap flex-1 rounded-lg px-3 py-2.5 text-sm font-bold transition-colors",
+                "tap flex-1 rounded-xl px-3 py-2.5 text-[15px] font-bold transition-colors",
                 type === o.value ? o.on : "text-muted"
               )}
             >
@@ -343,6 +336,7 @@ function AddTransactionModal({
             </button>
           ))}
         </div>
+        )}
 
         {/* scan an invoice: the camera opens, the form fills itself */}
         <input
@@ -357,10 +351,10 @@ function AddTransactionModal({
           type="button"
           onClick={() => fileRef.current?.click()}
           disabled={scanning}
-          className="tap mb-3 flex h-12 w-full items-center justify-center gap-2 rounded-xl border border-dashed border-brand bg-brand-soft text-sm font-bold text-brand disabled:opacity-70"
+          className="tap mb-3 flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-brand-soft text-sm font-bold text-brand disabled:opacity-70"
         >
           {scanning ? <Loader2 size={18} className="animate-spin" /> : <ScanLine size={18} />}
-          {scanning ? `جارٍ قراءة الفاتورة… ${scanPct > 0 ? `${scanPct}%` : ""}` : "امسح فاتورة لتعبئة البيانات تلقائيًا"}
+          {scanning ? `جارٍ قراءة الفاتورة… ${scanPct > 0 ? `${scanPct}%` : ""}` : "صوّر الفاتورة"}
         </button>
         {scanMsg && (
           <p
@@ -375,7 +369,7 @@ function AddTransactionModal({
         )}
 
         {/* amount — the one required field */}
-        <label className="mb-4 flex items-center justify-center gap-2 rounded-2xl bg-surface-2 px-4 py-4" dir="ltr">
+        <label className="mb-4 flex items-center justify-center gap-2 rounded-3xl bg-surface-2 px-4 py-5" dir="ltr">
           <span className="text-2xl font-bold text-muted">{symbol}</span>
           <input
             ref={amountRef}
@@ -435,8 +429,8 @@ function AddTransactionModal({
                       onClick={() => setCategoryId(active ? "" : c.id)}
                       aria-pressed={active}
                       className={clsx(
-                        "tap flex min-w-0 flex-col items-center gap-1.5 rounded-xl border px-1 py-2.5 transition-colors",
-                        active ? "border-brand bg-brand-soft" : "border-border bg-surface"
+                        "tap flex min-w-0 flex-col items-center gap-1.5 rounded-2xl border-2 px-1 py-2.5 transition-colors",
+                        active ? "border-brand bg-brand-soft" : "border-transparent bg-surface-2"
                       )}
                     >
                       <span
@@ -492,29 +486,46 @@ function AddTransactionModal({
               )}
             </div>
 
-            {/* who */}
-            <div className="mb-4">
-              <span className="mb-1.5 block text-sm font-semibold text-ink">من؟</span>
-              <div className="flex flex-wrap gap-2">
-                <Chip active={who === "shared"} onClick={() => setWho("shared")}>مشترك</Chip>
-                {members.map((m) => (
-                  <Chip key={m.id} active={who === m.id} onClick={() => setWho(m.id)}>
-                    {m.name}
-                  </Chip>
-                ))}
+            {/* who — only asked when there is more than one person */}
+            {many && type === "expense" && (
+              <div className="mb-4">
+                <span className="mb-1.5 block text-sm font-semibold text-ink">لمن هذا المصروف؟</span>
+                <div className="grid grid-cols-2 gap-2">
+                  {([
+                    [true, "لنا الاثنين", "يُقسم بالتساوي"],
+                    [false, "لي وحدي", "لا يدخل في الحساب بيننا"],
+                  ] as const).map(([val, label, hint]) => (
+                    <button
+                      key={label}
+                      type="button"
+                      onClick={() => setForUs(val)}
+                      aria-pressed={forUs === val}
+                      className={clsx(
+                        "tap rounded-2xl border-2 px-3 py-2.5 text-right transition-colors",
+                        forUs === val ? "border-brand bg-brand-soft" : "border-transparent bg-surface-2"
+                      )}
+                    >
+                      <span className={clsx("block text-sm font-bold", forUs === val ? "text-brand" : "text-ink")}>{label}</span>
+                      <span className="block text-[11px] text-muted">{hint}</span>
+                    </button>
+                  ))}
+                </div>
               </div>
-              {who === "shared" && type === "expense" && members.length > 1 && (
-                <label className="mt-3 flex cursor-pointer items-center gap-2 text-sm text-ink">
-                  <input
-                    type="checkbox"
-                    checked={split}
-                    onChange={(e) => setSplit(e.target.checked)}
-                    className="h-5 w-5 accent-[color:var(--brand)]"
-                  />
-                  قسّم بالتساوي بيننا
-                </label>
-              )}
-            </div>
+            )}
+            {many && (
+              <div className="mb-4">
+                <span className="mb-1.5 block text-sm font-semibold text-ink">
+                  {type === "income" ? "لمن الدخل؟" : forUs ? "من دفع؟" : "لمن؟"}
+                </span>
+                <div className="flex flex-wrap gap-2">
+                  {members.map((m) => (
+                    <Chip key={m.id} active={payer === m.id} onClick={() => setPayer(m.id)}>
+                      {m.name}
+                    </Chip>
+                  ))}
+                </div>
+              </div>
+            )}
           </>
         )}
 
@@ -530,7 +541,7 @@ function AddTransactionModal({
               value={date}
               max="2099-12-31"
               onChange={(e) => e.target.value && setDate(e.target.value)}
-              className="tap h-[38px] min-w-0 flex-1 rounded-full border border-border bg-surface px-3 text-base text-muted outline-none focus:border-brand sm:text-sm"
+              className="tap h-[38px] min-w-0 flex-1 rounded-full bg-surface-2 px-3 text-base text-muted outline-none"
             />
           </div>
         </div>
@@ -540,7 +551,7 @@ function AddTransactionModal({
           type="button"
           onClick={() => setMore((v) => !v)}
           aria-expanded={more}
-          className="tap mb-2 flex w-full items-center justify-between rounded-xl bg-surface-2 px-3.5 py-3 text-sm"
+          className="tap mb-2 flex w-full items-center justify-between rounded-2xl bg-surface-2 px-4 py-3 text-sm"
         >
           <span className="font-semibold text-ink">تفاصيل أكثر</span>
           <span className="flex min-w-0 items-center gap-1.5 text-muted">

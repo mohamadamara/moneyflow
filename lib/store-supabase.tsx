@@ -328,6 +328,10 @@ export function SupabaseStoreProvider({
                 await repo.removeMemberRow(sb, r.id);
               for (const a of next.filter((n) => !current.find((c) => c.id === n.id)))
                 await repo.addMemberRow(sb, householdId, a.name, a.color);
+              for (const n of next) {
+                const before = current.find((c) => c.id === n.id);
+                if (before && before.name !== n.name) await repo.renameMemberRow(sb, n.id, n.name);
+              }
             }
           }
         );
