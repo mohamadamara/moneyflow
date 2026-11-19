@@ -31,6 +31,7 @@ export async function resolveHouseholdId(sb: SupabaseClient): Promise<string | n
     .from("household_members")
     .select("household_id")
     .eq("user_id", auth.user.id)
+    .order("created_at", { ascending: false }) // the household joined last wins
     .limit(1);
   if (error || !data || data.length === 0) return null;
   return data[0].household_id as string;
@@ -73,6 +74,7 @@ export async function loadDatabase(sb: SupabaseClient, householdId: string): Pro
   const householdMembers: Member[] = memberRows.map((m) => ({
     id: m.id as string,
     name: m.display_name as string,
+    userId: (m.user_id as string) ?? undefined,
     role: m.role as Member["role"],
     color: (m.color as string) ?? "#6366f1",
   }));
@@ -415,6 +417,21 @@ export async function renameMemberRow(sb: SupabaseClient, id: string, name: stri
 }
 export async function removeMemberRow(sb: SupabaseClient, id: string) {
   await sb.from("household_members").delete().eq("id", id);
+}
+
+// ---------------- PARTNER INVITE ----------------
+// Both run on the database (see create_invite / join_household in setup.sql).
+
+export async function createInvite(sb: SupabaseClient, householdId: string, memberId?: string): Promise<string> {
+  const { data, error } = await sb.rpc("create_invite", { p_household: householdId, p_member: memberId ?? null });
+  if (error) throw error;
+  return data as string;
+}
+
+export async function joinHousehold(sb: SupabaseClient, code: string, name: string): Promise<string> {
+  const { data, error } = await sb.rpc("join_household", { p_code: code.trim().toUpperCase(), p_name: name.trim() });
+  if (error) throw error;
+  return data as string;
 }
 
 // ---------------- ONBOARDING ----------------

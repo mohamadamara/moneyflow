@@ -4,7 +4,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { Wallet } from "lucide-react";
 import { getSupabaseBrowser } from "@/lib/supabase/client";
-import { resolveHouseholdId } from "@/lib/supabase/repo";
+import { resolveHouseholdId, createInvite } from "@/lib/supabase/repo";
 import { AuthContext } from "@/lib/auth-context";
 import { StoreProvider } from "@/lib/store";
 import { SupabaseStoreProvider } from "@/lib/store-supabase";
@@ -15,7 +15,7 @@ import { Onboarding } from "./onboarding";
 
 function Splash() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-bg">
+    <div className="app-frame flex items-center justify-center">
       <div className="flex flex-col items-center gap-3">
         <div className="flex h-12 w-12 animate-pulse items-center justify-center rounded-2xl bg-brand text-on-brand">
           <Wallet size={22} />
@@ -45,6 +45,7 @@ function SupabaseApp({ sb, children }: { sb: SupabaseClient; children: React.Rea
   const [phase, setPhase] = useState<Phase>("loading");
   const [householdId, setHouseholdId] = useState<string | null>(null);
   const [email, setEmail] = useState<string>("");
+  const [userId, setUserId] = useState<string>("");
   const [displayName, setDisplayName] = useState<string>("أنا");
 
   useEffect(() => {
@@ -59,6 +60,7 @@ function SupabaseApp({ sb, children }: { sb: SupabaseClient; children: React.Rea
         return;
       }
       setEmail(user.email ?? "");
+      setUserId(user.id);
       setDisplayName((user.user_metadata?.full_name as string) || user.email?.split("@")[0] || "أنا");
       const hid = await resolveHouseholdId(sb);
       if (!active) return;
@@ -99,6 +101,7 @@ function SupabaseApp({ sb, children }: { sb: SupabaseClient; children: React.Rea
       <Onboarding
         sb={sb}
         defaultName={displayName}
+        onSignOut={signOut}
         onDone={(id) => {
           setHouseholdId(id);
           setPhase("ready");
@@ -107,7 +110,9 @@ function SupabaseApp({ sb, children }: { sb: SupabaseClient; children: React.Rea
     );
 
   return (
-    <AuthContext.Provider value={{ mode: "supabase", email, signOut }}>
+    <AuthContext.Provider
+      value={{ mode: "supabase", email, userId, signOut, createInvite: (memberId) => createInvite(sb, householdId!, memberId) }}
+    >
       <SupabaseStoreProvider sb={sb} householdId={householdId!}>
         <UIProvider>
           <Shell>{children}</Shell>

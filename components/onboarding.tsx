@@ -1,86 +1,123 @@
 "use client";
 
+// First time after signing up: start a new household, or join your
+// partner's household with the 6-letter code they sent you.
+
 import { useState } from "react";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { Wallet, Check } from "lucide-react";
+import { Scale, Plus, KeyRound, ChevronRight } from "lucide-react";
 import { Button } from "./ui";
 import { Field, Input, Segmented } from "./form";
-import { Icon } from "./icon";
-import { createHousehold } from "@/lib/supabase/repo";
-import type { AccountKind, CurrencyCode } from "@/lib/types";
+import { createHousehold, joinHousehold } from "@/lib/supabase/repo";
+import type { CurrencyCode } from "@/lib/types";
 
-const STARTER: { key: string; name: string; kind: AccountKind; icon: string }[] = [
-  { key: "bank", name: "الحساب البنكي", kind: "bank", icon: "Landmark" },
-  { key: "cash", name: "نقد", kind: "cash", icon: "Banknote" },
-  { key: "credit", name: "بطاقة ائتمان", kind: "credit", icon: "CreditCard" },
-  { key: "savings", name: "حساب توفير", kind: "savings", icon: "PiggyBank" },
-];
+type Step = "choose" | "new" | "join";
 
 export function Onboarding({
   sb,
   defaultName,
   onDone,
+  onSignOut,
 }: {
   sb: SupabaseClient;
   defaultName: string;
   onDone: (householdId: string) => void;
+  onSignOut?: () => void;
 }) {
-  const [step, setStep] = useState(1);
-  const [ownerName, setOwnerName] = useState(defaultName);
-  const [householdName, setHouseholdName] = useState("عائلتي");
+  const [step, setStep] = useState<Step>("choose");
+  const [name, setName] = useState(defaultName);
   const [currency, setCurrency] = useState<CurrencyCode>("ILS");
-  const [selected, setSelected] = useState<Record<string, boolean>>({ bank: true, cash: true });
-  const [balances, setBalances] = useState<Record<string, string>>({});
+  const [code, setCode] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 
-  async function finish() {
+  async function createNew() {
     setBusy(true);
     setError("");
     try {
-      const accounts = STARTER.filter((s) => selected[s.key]).map((s) => ({
-        name: s.name,
-        kind: s.kind,
-        opening: parseFloat(balances[s.key] ?? "") || 0,
-      }));
-      const id = await createHousehold(sb, { name: householdName.trim() || "عائلتي", currency, ownerName: ownerName.trim() || "أنا", accounts });
+      const id = await createHousehold(sb, {
+        name: "عائلتنا",
+        currency,
+        ownerName: name.trim() || "أنا",
+        accounts: [
+          { name: "الحساب البنكي", kind: "bank", opening: 0 },
+          { name: "نقد", kind: "cash", opening: 0 },
+        ],
+      });
       onDone(id);
     } catch (e) {
-      const msg = (e as { message?: string })?.message ?? String(e);
-      setError(`تعذّر إنشاء الأسرة: ${msg}`);
       console.error("[onboarding] createHousehold failed:", e);
+      setError("لم ينجح الإنشاء. تأكّد من الإنترنت وحاول مرة أخرى.");
+      setBusy(false);
+    }
+  }
+
+  async function join() {
+    setBusy(true);
+    setError("");
+    try {
+      const id = await joinHousehold(sb, code, name);
+      onDone(id);
+    } catch (e) {
+      const msg = ((e as { message?: string })?.message ?? "").toLowerCase();
+      setError(msg.includes("invalid code") ? "الرمز غير صحيح أو انتهى. اطلب من شريكك رمزًا جديدًا." : "لم ينجح الدخول. تأكّد من الإنترنت وحاول مرة أخرى.");
       setBusy(false);
     }
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-bg px-4 py-8">
-      <div className="w-full max-w-md">
-        <div className="mb-6 flex flex-col items-center text-center">
-          <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-brand text-on-brand">
-            <Wallet size={22} />
-          </div>
-          <h1 className="text-xl font-extrabold text-ink">لنُجهّز مساحتكم المالية</h1>
-          <p className="mt-1 text-sm text-muted">خطوتان سريعتان — يمكنكم تعديل كل شيء لاحقًا.</p>
+    <div className="app-frame flex flex-col px-5 pb-8 pt-[max(2rem,env(safe-area-inset-top))]">
+      <div className="mb-8 flex flex-col items-center text-center">
+        <span className="mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-brand text-on-brand">
+          <Scale size={26} />
+        </span>
+        <h1 className="text-2xl font-extrabold text-ink">أهلًا بك في ميزان</h1>
+        <p className="mt-1 text-sm text-muted">خطوة واحدة وتبدأ.</p>
+      </div>
+
+      {error && <div className="mb-4 rounded-2xl bg-neg-soft px-4 py-3 text-sm font-semibold text-neg">{error}</div>}
+
+      {step === "choose" && (
+        <div className="space-y-3">
+          <button onClick={() => setStep("new")} className="tap flex w-full items-center gap-3 rounded-3xl bg-surface p-4 text-right shadow-card">
+            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-brand-soft text-brand">
+              <Plus size={22} />
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block text-base font-bold text-ink">أبدأ من جديد</span>
+              <span className="block text-xs text-muted">أنا أول واحد، وسأدعو شريكي بعدها</span>
+            </span>
+          </button>
+          <button onClick={() => setStep("join")} className="tap flex w-full items-center gap-3 rounded-3xl bg-surface p-4 text-right shadow-card">
+            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-brand-soft text-brand">
+              <KeyRound size={22} />
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block text-base font-bold text-ink">عندي رمز من شريكي</span>
+              <span className="block text-xs text-muted">أدخل نفس الحساب من هاتفي</span>
+            </span>
+          </button>
         </div>
+      )}
 
-        <div className="mb-4 flex items-center justify-center gap-2">
-          {[1, 2].map((s) => (
-            <span key={s} className={`h-2 w-8 rounded-full ${step >= s ? "bg-brand" : "bg-surface-2"}`} />
-          ))}
-        </div>
+      {step !== "choose" && (
+        <div className="rounded-3xl bg-surface p-5 shadow-card">
+          <button
+            onClick={() => {
+              setStep("choose");
+              setError("");
+            }}
+            className="tap mb-3 flex items-center gap-1 text-sm font-bold text-muted"
+          >
+            <ChevronRight size={18} /> رجوع
+          </button>
 
-        <div className="rounded-2xl border border-border bg-surface p-6 shadow-card">
-          {error && <div className="mb-4 rounded-xl bg-neg-soft px-3 py-2 text-sm text-neg">{error}</div>}
+          <Field label="اسمك">
+            <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="اسمك" />
+          </Field>
 
-          {step === 1 && (
+          {step === "new" ? (
             <>
-              <Field label="اسمك">
-                <Input value={ownerName} onChange={(e) => setOwnerName(e.target.value)} placeholder="اسمك" autoFocus />
-              </Field>
-              <Field label="اسم الأسرة / المجموعة">
-                <Input value={householdName} onChange={(e) => setHouseholdName(e.target.value)} placeholder="عائلتي" />
-              </Field>
               <Field label="العملة">
                 <Segmented<CurrencyCode>
                   value={currency}
@@ -92,60 +129,36 @@ export function Onboarding({
                   ]}
                 />
               </Field>
-              <Button size="lg" className="mt-2 w-full" onClick={() => setStep(2)} disabled={!ownerName.trim()}>
-                التالي
+              <Button size="lg" className="mt-2 w-full" onClick={createNew} disabled={busy || !name.trim()}>
+                {busy ? "لحظة…" : "ابدأ"}
+              </Button>
+            </>
+          ) : (
+            <>
+              <Field label="الرمز من شريكك" hint="٦ أحرف، تجده عنده في صفحة «بيننا».">
+                <Input
+                  value={code}
+                  onChange={(e) => setCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 6))}
+                  placeholder="ABC123"
+                  dir="ltr"
+                  autoCapitalize="characters"
+                  autoComplete="off"
+                  className="tnum text-center text-2xl font-extrabold tracking-[0.3em]"
+                />
+              </Field>
+              <Button size="lg" className="mt-2 w-full" onClick={join} disabled={busy || code.length !== 6}>
+                {busy ? "لحظة…" : "ادخل"}
               </Button>
             </>
           )}
-
-          {step === 2 && (
-            <>
-              <p className="mb-3 text-sm font-semibold text-ink">أضف حساباتك (اختر ما ينطبق)</p>
-              <div className="space-y-2">
-                {STARTER.map((s) => {
-                  const on = selected[s.key];
-                  return (
-                    <div key={s.key} className={`rounded-xl border p-3 transition-colors ${on ? "border-brand bg-brand-soft" : "border-border"}`}>
-                      <button
-                        type="button"
-                        onClick={() => setSelected((p) => ({ ...p, [s.key]: !p[s.key] }))}
-                        className="flex w-full items-center gap-3 text-right"
-                      >
-                        <span className={`flex h-9 w-9 items-center justify-center rounded-lg ${on ? "bg-brand text-on-brand" : "bg-surface-2 text-muted"}`}>
-                          <Icon name={s.icon} size={17} />
-                        </span>
-                        <span className="flex-1 text-sm font-semibold text-ink">{s.name}</span>
-                        {on && <Check size={18} className="text-brand" />}
-                      </button>
-                      {on && (
-                        <div className="mt-2 pr-12">
-                          <Input
-                            type="number"
-                            value={balances[s.key] ?? ""}
-                            onChange={(e) => setBalances((p) => ({ ...p, [s.key]: e.target.value }))}
-                            placeholder="الرصيد الحالي (اختياري)"
-                            className="!h-9 text-sm"
-                          />
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-
-              <div className="mt-5 flex gap-2">
-                <Button variant="outline" onClick={() => setStep(1)} disabled={busy}>رجوع</Button>
-                <Button className="flex-1" onClick={finish} disabled={busy}>
-                  {busy ? "جارٍ الإنشاء…" : "إنشاء والبدء"}
-                </Button>
-              </div>
-              <button onClick={finish} disabled={busy} className="mt-3 block w-full text-center text-sm text-muted hover:underline">
-                تخطّي وإنشاء بدون حسابات
-              </button>
-            </>
-          )}
         </div>
-      </div>
+      )}
+
+      {onSignOut && (
+        <button onClick={onSignOut} className="tap mt-auto pt-8 text-center text-sm text-muted">
+          تسجيل الخروج
+        </button>
+      )}
     </div>
   );
 }

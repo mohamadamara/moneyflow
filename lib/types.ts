@@ -31,6 +31,7 @@ export interface Member {
   id: string;
   name: string;
   email?: string;
+  userId?: string; // set when this person signs in from their own phone
   role: MemberRole;
   color: string; // used for avatars / attribution chips
 }

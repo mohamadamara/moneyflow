@@ -5,7 +5,7 @@
 // up who paid what, and says who should give whom how much to be even.
 
 import { useState } from "react";
-import { ArrowLeft, Check, Info, UserPlus } from "lucide-react";
+import { ArrowLeft, Check, Copy, Info, Send, Smartphone, UserPlus } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { sharedSummary } from "@/lib/calc";
 import { money } from "@/lib/format";
@@ -16,6 +16,8 @@ import { Avatar } from "@/components/widgets";
 import { TxList } from "@/components/tx-list";
 import { TxDetail } from "@/components/tx-detail";
 import { useUI } from "@/components/quick-add";
+import { useAuth } from "@/lib/auth-context";
+import { useMe } from "@/lib/me";
 import type { Transaction } from "@/lib/types";
 
 const COLORS = ["#ec4899", "#0ea5e9", "#f59e0b", "#a855f7", "#14b8a6"];
@@ -23,6 +25,9 @@ const COLORS = ["#ec4899", "#0ea5e9", "#f59e0b", "#a855f7", "#14b8a6"];
 export default function SharedPage() {
   const { db, ready, month, updateHousehold } = useStore();
   const { openAdd } = useUI();
+  const auth = useAuth();
+  const me = useMe();
+  const online = !!auth.createInvite;
   const [sel, setSel] = useState<Transaction | null>(null);
   const [name, setName] = useState("");
   const cur = db.household.currency;
@@ -54,6 +59,9 @@ export default function SharedPage() {
           </p>
         </section>
 
+        {online ? (
+          <InviteBox title="ادعُ شريكك ليدخل من هاتفه" />
+        ) : (
         <Card className="p-4">
           <p className="mb-3 text-[15px] font-bold text-ink">ما اسم شريكك؟</p>
           <form
@@ -69,11 +77,15 @@ export default function SharedPage() {
             </Button>
           </form>
         </Card>
+        )}
 
         <HowItWorks />
       </div>
     );
   }
+
+  // online: people added by name who have not signed in from their own phone yet
+  const notLinked = online && me?.role === "owner" ? members.filter((m) => !m.userId && m.role !== "owner") : [];
 
   const s = sharedSummary(db, month);
   const even = s.settle.length === 0;
@@ -169,6 +181,10 @@ export default function SharedPage() {
         )}
       </Card>
 
+      {notLinked.map((m) => (
+        <InviteBox key={m.id} memberId={m.id} title={`${m.name} لم يدخل من هاتفه بعد`} />
+      ))}
+
       <HowItWorks />
       <TxDetail tx={sel} onClose={() => setSel(null)} />
     </div>
@@ -195,6 +211,88 @@ function HowItWorks() {
           </li>
         ))}
       </ol>
+    </Card>
+  );
+}
+
+/** Makes a 6-letter code the partner types after signing up on their phone. */
+function InviteBox({ title, memberId }: { title: string; memberId?: string }) {
+  const auth = useAuth();
+  const [code, setCode] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState("");
+
+  async function make() {
+    if (!auth.createInvite) return;
+    setBusy(true);
+    setMsg("");
+    try {
+      setCode(await auth.createInvite(memberId));
+    } catch {
+      setMsg("لم ينجح. تأكّد من الإنترنت وحاول مرة أخرى.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const link = typeof window !== "undefined" ? window.location.origin : "";
+  const text = `ادخل إلى ميزان من هاتفك: ${link}\nأنشئ حسابًا، ثم اختر «عندي رمز من شريكي» واكتب: ${code}`;
+
+  async function send() {
+    try {
+      if (navigator.share) await navigator.share({ text });
+      else {
+        await navigator.clipboard.writeText(text);
+        setMsg("تم النسخ. الصقه في واتساب.");
+      }
+    } catch {
+      /* closed the share sheet */
+    }
+  }
+
+  return (
+    <Card className="p-4">
+      <div className="flex items-center gap-3">
+        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-brand-soft text-brand">
+          <Smartphone size={20} />
+        </span>
+        <div className="min-w-0 flex-1">
+          <p className="text-[15px] font-bold text-ink">{title}</p>
+          <p className="text-xs text-muted">تعطيه رمزًا، يكتبه في هاتفه، ويرى كل شيء معك.</p>
+        </div>
+      </div>
+
+      {code ? (
+        <div className="mt-4">
+          <p className="tnum rounded-2xl bg-surface-2 py-4 text-center text-3xl font-extrabold tracking-[0.35em] text-ink" dir="ltr">
+            {code}
+          </p>
+          <p className="mt-2 text-center text-xs text-muted">يعمل مرة واحدة، لمدة ٧ أيام.</p>
+          <div className="mt-3 grid grid-cols-2 gap-2">
+            <Button onClick={send}>
+              <Send size={18} /> أرسل
+            </Button>
+            <Button
+              variant="outline"
+              onClick={async () => {
+                try {
+                  await navigator.clipboard.writeText(code);
+                  setMsg("تم نسخ الرمز.");
+                } catch {
+                  /* clipboard blocked */
+                }
+              }}
+            >
+              <Copy size={18} /> انسخ الرمز
+            </Button>
+          </div>
+        </div>
+      ) : (
+        <Button className="mt-4 w-full" onClick={make} disabled={busy}>
+          {busy ? "لحظة…" : "اصنع رمز دعوة"}
+        </Button>
+      )}
+      {msg && <p className="mt-2 text-center text-xs font-semibold text-muted">{msg}</p>}
     </Card>
   );
 }

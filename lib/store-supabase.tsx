@@ -57,6 +57,20 @@ export function SupabaseStoreProvider({
     })();
   }, [reload]);
 
+  // Sync with the other phone: fetch again when the app comes back to the
+  // screen, and every 20 seconds while it is open.
+  useEffect(() => {
+    const onShow = () => document.visibilityState === "visible" && reload();
+    document.addEventListener("visibilitychange", onShow);
+    window.addEventListener("focus", onShow);
+    const timer = setInterval(onShow, 20000);
+    return () => {
+      document.removeEventListener("visibilitychange", onShow);
+      window.removeEventListener("focus", onShow);
+      clearInterval(timer);
+    };
+  }, [reload]);
+
   const patchLocal = useCallback((fn: (d: Database) => void) => {
     setDb((prev) => {
       const draft = structuredClone(prev);

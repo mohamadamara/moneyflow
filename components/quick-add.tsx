@@ -5,6 +5,7 @@ import clsx from "clsx";
 import { Check, ChevronDown, Loader2, ScanLine } from "lucide-react";
 import { scanInvoice } from "@/lib/scan";
 import { useStore } from "@/lib/store";
+import { useMe } from "@/lib/me";
 import { Modal, Field, Input, Select, Textarea } from "./form";
 import { Button } from "./ui";
 import { Icon } from "./icon";
@@ -129,6 +130,7 @@ function AddTransactionModal({
   onSaved: (msg: string) => void;
 }) {
   const { db, addTransaction } = useStore();
+  const me = useMe();
   const members = db.household.members;
   const accounts = db.accounts.filter((a) => !a.archived);
   const symbol = CURRENCY_SYMBOL[db.household.currency] ?? "₪";
@@ -171,7 +173,7 @@ function AddTransactionModal({
     const acc = accounts.find((a) => a.id === prefs.accountId) ?? accounts[0];
     setAccountId(acc?.id ?? "");
     setToAccountId(accounts.find((a) => a.id !== acc?.id)?.id ?? "");
-    setPayer(members.some((m) => m.id === prefs.payer) ? prefs.payer! : members[0]?.id ?? "");
+    setPayer(members.some((m) => m.id === prefs.payer) ? prefs.payer! : me?.id ?? "");
     setForUs(prefs.forUs ?? true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
@@ -262,7 +264,7 @@ function AddTransactionModal({
     if (!valid) return;
     // shared = for all of us, split equally; the payer is remembered so
     // the "بيننا" page can say who owes whom
-    const payerId = members.some((m) => m.id === payer) ? payer : members[0]?.id;
+    const payerId = members.some((m) => m.id === payer) ? payer : me?.id;
     const ownership: Ownership =
       type === "transfer" ? "shared" : type === "expense" && many && forUs ? "shared" : "personal";
     const memberId: string | undefined = type === "transfer" ? undefined : payerId;

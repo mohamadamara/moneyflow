@@ -17,7 +17,7 @@ npm run dev
 
 Open <http://localhost:3000>.
 
-The app runs immediately in **Local Demo mode** — data is seeded and persists in
+The app runs immediately in **local mode** — it starts empty and data persists in
 your browser (`localStorage`). No backend or keys required. Every screen is live and
 clickable: add/edit/delete transactions, pay bills, contribute to goals, import/export
 CSV, switch months, toggle dark mode, etc.
@@ -33,16 +33,21 @@ CSV, switch months, toggle dark mode, etc.
 | Sharing | simulated | real partner invitations |
 | Security | n/a | Row Level Security, server-enforced |
 
-### Switching to Supabase
+### Switching to Supabase (two phones, one account)
 
-1. Create a project at <https://supabase.com>.
-2. In the SQL Editor, run **`supabase/schema.sql`** then **`supabase/policies.sql`**.
-3. Copy `.env.example` → `.env.local` and fill:
+1. Create a free project at <https://supabase.com>.
+2. In **SQL Editor**, paste all of **`supabase/setup.sql`** and press **Run**.
+3. In **Authentication → URL Configuration**, set **Site URL** to the app's address
+   (for example `https://moneyflow-main.vercel.app`).
+4. Put the project URL and the `anon` public key in the hosting env (or `.env.local`):
    ```
    NEXT_PUBLIC_SUPABASE_URL=...
    NEXT_PUBLIC_SUPABASE_ANON_KEY=...
    ```
-4. Restart `npm run dev`. Settings → *الخادم (Supabase)* will show **متّصل**.
+5. Redeploy. Each person signs up on their own phone. The first one picks
+   **أبدأ من جديد**; on the **بيننا** page they make a 6-letter invite code; the
+   partner picks **عندي رمز من شريكي** and types it. Both phones then share the
+   same data (it refreshes when the app opens and every 20 seconds).
 
 ---
 
@@ -61,8 +66,7 @@ lib/
   supabase/     Browser + server clients (production path)
   nav.ts        Navigation config
 supabase/
-  schema.sql    Tables, enums, indexes, foreign keys, triggers
-  policies.sql  Row Level Security + storage rules
+  setup.sql     Everything in one file: tables, security rules, invite codes
 ```
 
 **Design principle:** business logic lives in `lib/`, never inside React components.

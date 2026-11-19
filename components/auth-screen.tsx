@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { Wallet } from "lucide-react";
+import { Scale } from "lucide-react";
 import { Button } from "./ui";
 import { Field, Input } from "./form";
 
@@ -67,21 +67,21 @@ export function AuthScreen({ sb }: { sb: SupabaseClient }) {
   const title = mode === "login" ? "تسجيل الدخول" : mode === "signup" ? "إنشاء حساب" : "استعادة كلمة المرور";
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-bg px-4">
-      <div className="w-full max-w-sm">
+    <div className="app-frame flex flex-col justify-center px-5 py-8">
+      <div className="w-full">
         <div className="mb-6 flex flex-col items-center text-center">
-          <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-brand text-on-brand">
-            <Wallet size={22} />
+          <div className="mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-brand text-on-brand">
+            <Scale size={26} />
           </div>
           <h1 className="text-2xl font-extrabold text-ink">مِيزان</h1>
-          <p className="mt-1 text-sm text-muted">شاهد أموالكم بوضوح. أدِروها معًا.</p>
+          <p className="mt-1 text-sm text-muted">نفس الحساب على هاتفك وهاتف شريكك.</p>
         </div>
 
-        <div className="rounded-2xl border border-border bg-surface p-6 shadow-card">
+        <div className="rounded-3xl bg-surface p-5 shadow-card">
           <h2 className="mb-4 text-lg font-bold text-ink">{title}</h2>
 
-          {error && <div className="mb-4 rounded-xl bg-neg-soft px-3 py-2 text-sm text-neg">{error}</div>}
-          {notice && <div className="mb-4 rounded-xl bg-pos-soft px-3 py-2 text-sm text-pos">{notice}</div>}
+          {error && <div className="mb-4 rounded-2xl bg-neg-soft px-4 py-3 text-sm font-semibold text-neg">{error}</div>}
+          {notice && <div className="mb-4 rounded-2xl bg-pos-soft px-4 py-3 text-sm font-semibold text-pos">{notice}</div>}
 
           <form onSubmit={submit}>
             {mode === "signup" && (
@@ -103,18 +103,18 @@ export function AuthScreen({ sb }: { sb: SupabaseClient }) {
             </Button>
           </form>
 
-          <div className="mt-4 space-y-1 text-center text-sm">
+          <div className="mt-4 space-y-3 text-center text-sm font-semibold">
             {mode === "login" && (
               <>
-                <button onClick={() => setMode("signup")} className="text-brand hover:underline">ليس لديك حساب؟ أنشئ حسابًا</button>
-                <div><button onClick={() => setMode("reset")} className="text-muted hover:underline">نسيت كلمة المرور؟</button></div>
+                <button onClick={() => setMode("signup")} className="tap text-brand">أول مرة؟ أنشئ حسابًا</button>
+                <div><button onClick={() => setMode("reset")} className="tap text-muted">نسيت كلمة المرور؟</button></div>
               </>
             )}
             {mode === "signup" && (
-              <button onClick={() => setMode("login")} className="text-brand hover:underline">لديك حساب؟ سجّل الدخول</button>
+              <button onClick={() => setMode("login")} className="tap text-brand">لديك حساب؟ سجّل الدخول</button>
             )}
             {mode === "reset" && (
-              <button onClick={() => setMode("login")} className="text-brand hover:underline">العودة لتسجيل الدخول</button>
+              <button onClick={() => setMode("login")} className="tap text-brand">العودة لتسجيل الدخول</button>
             )}
           </div>
         </div>

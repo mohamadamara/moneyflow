@@ -14,6 +14,7 @@ import { Icon } from "./icon";
 import { Avatar } from "./widgets";
 import { useUI } from "./quick-add";
 import { useStore } from "@/lib/store";
+import { useMe } from "@/lib/me";
 import { addMonths, todayKey } from "@/lib/calc";
 import { fmtMonth } from "@/lib/format";
 
@@ -51,8 +52,7 @@ export function MonthSwitch() {
 
 function Header() {
   const pathname = usePathname();
-  const { db } = useStore();
-  const me = db.household.members[0];
+  const me = useMe();
 
   if (pathname === "/") {
     return (
